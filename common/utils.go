@@ -5,12 +5,14 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 //
+
 package common
 
 import (
 	"bytes"
 )
 
+// BuildAddr is ued to build a http address
 func BuildAddr(host string, port string) string {
 	var buffer bytes.Buffer
 
@@ -21,4 +23,3 @@ func BuildAddr(host string, port string) string {
 
 	return buffer.String()
 }
-

@@ -5,6 +5,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 //
+
+// package common are sets of general function
 package common
 
 import (
