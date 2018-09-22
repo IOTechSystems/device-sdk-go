@@ -28,3 +28,11 @@ func (AddressableClientMock) AddressableForName(name string) (models.Addressable
 
 	return addressable, err
 }
+
+func (AddressableClientMock) Update(addr models.Addressable) error {
+	return nil
+}
+
+func (AddressableClientMock) Delete(id string) error {
+	return nil
+}

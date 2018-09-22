@@ -9,7 +9,7 @@ package config
 
 import (
 	"fmt"
-	"github.com/edgexfoundry/device-sdk-go/common"
+	"github.com/edgexfoundry/device-sdk-go/internal/common"
 	"net/http"
 	"net/http/httptest"
 	"strconv"

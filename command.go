@@ -9,6 +9,7 @@ package device
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/edgexfoundry/device-sdk-go/internal/common"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -25,8 +26,8 @@ func commandFunc(w http.ResponseWriter, r *http.Request) {
 	cmd := vars["command"]
 
 	if svc.locked {
-		msg := fmt.Sprintf("%s is locked; %s %s", svc.Name, r.Method, r.URL)
-		svc.lc.Error(msg)
+		msg := fmt.Sprintf("%s is locked; %s %s", svc.name, r.Method, r.URL)
+		logCli.Error(msg)
 		http.Error(w, msg, http.StatusLocked) // status=423
 		return
 	}
@@ -36,14 +37,14 @@ func commandFunc(w http.ResponseWriter, r *http.Request) {
 	if d == nil {
 		// TODO: standardize error message format (use of prefix)
 		msg := fmt.Sprintf("dev: %s not found; %s %s", id, r.Method, r.URL)
-		svc.lc.Error(msg)
+		logCli.Error(msg)
 		http.Error(w, msg, http.StatusNotFound) // status=404
 		return
 	}
 
 	if d.AdminState == "LOCKED" {
 		msg := fmt.Sprintf("%s is locked; %s %s", id, r.Method, r.URL)
-		svc.lc.Error(msg)
+		logCli.Error(msg)
 		http.Error(w, msg, http.StatusLocked) // status=423
 		return
 	}
@@ -58,14 +59,14 @@ func commandFunc(w http.ResponseWriter, r *http.Request) {
 	// TODO: once cache locking has been implemented, this should never happen
 	if err != nil {
 		msg := fmt.Sprintf("internal error; dev: %s not found in cache; %s %s", id, r.Method, r.URL)
-		svc.lc.Error(msg)
+		logCli.Error(msg)
 		http.Error(w, msg, http.StatusInternalServerError) // status=500
 		return
 	}
 
 	if !exists {
 		msg := fmt.Sprintf("%s for dev: %s not found; %s %s", cmd, id, r.Method, r.URL)
-		svc.lc.Error(msg)
+		logCli.Error(msg)
 		http.Error(w, msg, http.StatusNotFound) // status=404
 		return
 	}
@@ -74,12 +75,12 @@ func commandFunc(w http.ResponseWriter, r *http.Request) {
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		msg := fmt.Sprintf("commandFunc: error reading request body for: %s %s", r.Method, r.URL)
-		svc.lc.Error(msg)
+		logCli.Error(msg)
 	}
 
 	if len(body) == 0 && r.Method == http.MethodPut {
 		msg := fmt.Sprintf("no request body provided; %s %s", r.Method, r.URL)
-		svc.lc.Error(msg)
+		logCli.Error(msg)
 		http.Error(w, msg, http.StatusBadRequest) // status=400
 		return
 	}
@@ -90,11 +91,11 @@ func commandFunc(w http.ResponseWriter, r *http.Request) {
 func commandAllFunc(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
-	svc.lc.Debug(fmt.Sprintf("cmd: dev: all cmd: %s", vars["command"]))
+	logCli.Debug(fmt.Sprintf("cmd: dev: all cmd: %s", vars["command"]))
 
 	if svc.locked {
-		msg := fmt.Sprintf("%s is locked; %s %s", svc.Name, r.Method, r.URL)
-		svc.lc.Error(msg)
+		msg := fmt.Sprintf("%s is locked; %s %s", svc.name, r.Method, r.URL)
+		logCli.Error(msg)
 		http.Error(w, msg, http.StatusLocked) // status=423
 		return
 	}
@@ -118,20 +119,20 @@ func commandAllFunc(w http.ResponseWriter, r *http.Request) {
 }
 
 func executeCommand(w http.ResponseWriter, d *models.Device, cmd string, method string, args string) {
-	readings := make([]models.Reading, 0, svc.config.Device.MaxCmdOps)
+	readings := make([]models.Reading, 0, common.CurrentConfig.Device.MaxCmdOps)
 
 	// make ResourceOperations
 	ops, err := pc.GetResourceOperations(d.Name, cmd, method)
 	if err != nil {
-		svc.lc.Error(err.Error())
+		logCli.Error(err.Error())
 		http.Error(w, err.Error(), http.StatusNotFound) // status=404
 		return
 	}
 
-	if len(ops) > svc.config.Device.MaxCmdOps {
+	if len(ops) > common.CurrentConfig.Device.MaxCmdOps {
 		msg := fmt.Sprintf("MaxCmdOps (%d) execeeded for dev: %s cmd: %s method: %s",
-			svc.config.Device.MaxCmdOps, d.Name, cmd, method)
-		svc.lc.Error(msg)
+			common.CurrentConfig.Device.MaxCmdOps, d.Name, cmd, method)
+		logCli.Error(msg)
 		http.Error(w, msg, http.StatusInternalServerError) // status=500
 		return
 	}
@@ -139,7 +140,7 @@ func executeCommand(w http.ResponseWriter, d *models.Device, cmd string, method 
 	devObjs := pc.getDeviceObjects(d.Name)
 	if devObjs == nil {
 		msg := fmt.Sprintf("internal error; no devObjs for dev: %s; %s %s", d.Name, cmd, method)
-		svc.lc.Error(msg)
+		logCli.Error(msg)
 		http.Error(w, msg, http.StatusInternalServerError) // status=500
 		return
 	}
@@ -148,7 +149,7 @@ func executeCommand(w http.ResponseWriter, d *models.Device, cmd string, method 
 
 	for i, op := range ops {
 		objName := op.Object
-		svc.lc.Debug(fmt.Sprintf("deviceObject: %s", objName))
+		logCli.Debug(fmt.Sprintf("deviceObject: %s", objName))
 
 		// TODO: add recursive support for resource command chaining. This occurs when a
 		// deviceprofile resource command operation references another resource command
@@ -156,7 +157,7 @@ func executeCommand(w http.ResponseWriter, d *models.Device, cmd string, method 
 
 		devObj, ok := devObjs[objName]
 
-		svc.lc.Debug(fmt.Sprintf("deviceObject: %v", devObj))
+		logCli.Debug(fmt.Sprintf("deviceObject: %v", devObj))
 		if !ok {
 			msg := fmt.Sprintf("no devobject: %s for dev: %s cmd: %s method: %s", objName, d.Name, cmd, method)
 			http.Error(w, msg, http.StatusInternalServerError) // status=500
@@ -197,15 +198,15 @@ func executeCommand(w http.ResponseWriter, d *models.Device, cmd string, method 
 		reading := cr.Reading(d.Name, do.Name)
 		readings = append(readings, *reading)
 
-		svc.lc.Debug(fmt.Sprintf("dev: %s RO: %v reading: %v", d.Name, cr.RO, reading))
+		logCli.Debug(fmt.Sprintf("dev: %s RO: %v reading: %v", d.Name, cr.RO, reading))
 	}
 
 	// push to Core Data
 	event := &models.Event{Device: d.Name, Readings: readings}
-	_, err = svc.ec.Add(event)
+	_, err = common.EvtCli.Add(event)
 	if err != nil {
 		msg := fmt.Sprintf("internal error; failed to push event for dev: %s cmd: %s to CoreData: %s", d.Name, cmd, err)
-		svc.lc.Error(msg)
+		logCli.Error(msg)
 		http.Error(w, msg, http.StatusInternalServerError) // status=500
 		return
 	}
@@ -226,7 +227,7 @@ func executeCommand(w http.ResponseWriter, d *models.Device, cmd string, method 
 }
 
 func initCommand() {
-	svc.lc.Debug("initCommand called")
+	logCli.Debug("initCommand called")
 
 	sr := svc.r.PathPrefix("/device").Subrouter()
 	sr.HandleFunc("/{id}/{command}", commandFunc).Methods(http.MethodGet, http.MethodPut)

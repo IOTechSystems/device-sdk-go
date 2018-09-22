@@ -9,11 +9,14 @@ import (
 	"fmt"
 	"github.com/edgexfoundry/edgex-go/pkg/clients/types"
 	"os"
+	"sync"
 	"time"
 )
 
 type ConsulEndpoint struct {
 	RegistryClient Client
+	firstRun bool
+	WG *sync.WaitGroup
 }
 
 func (consulEndpoint ConsulEndpoint) Monitor(params types.EndpointParams, ch chan string) {
@@ -24,6 +27,14 @@ func (consulEndpoint ConsulEndpoint) Monitor(params types.EndpointParams, ch cha
 		}
 		url := fmt.Sprintf("http://%s:%v%s", data.Address, data.Port, params.Path)
 		ch <- url
-		time.Sleep(time.Second * time.Duration(15))
+
+		// After the first run, the client can be indicated initialized
+		if !consulEndpoint.firstRun {
+			consulEndpoint.WG.Done()
+		} else {
+			consulEndpoint.firstRun = true
+		}
+
+		time.Sleep(time.Second * time.Duration(params.Interval))
 	}
 }

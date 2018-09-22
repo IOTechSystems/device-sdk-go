@@ -8,6 +8,7 @@
 package common
 
 import (
+	"fmt"
 	"github.com/edgexfoundry/edgex-go/pkg/models"
 )
 
@@ -92,11 +93,10 @@ type DeviceInfo struct {
 
 // LoggingInfo is a struct which contains logging specific configuration settings.
 type LoggingInfo struct {
+	// EnableRemote defines whether to use Logging Service
+	EnableRemote bool
 	// File is the pathname of a local log file to be created.
 	File string
-	// RemoteURL is the URL of the support logging RegisteredService.
-	// TODO: make this just another client!
-	RemoteURL string
 }
 
 // ScheduleEventInfo is a struct which contains event schedule specific
@@ -125,7 +125,7 @@ type Config struct {
 	// Registry contains registry-specific settings.
 	Registry RegisteredService
 	// Clients is a map of services used by a DS.
-	Clients map[string]RegisteredService
+	Clients map[string]ClientInfo
 	// Device contains device-specific coniguration settings.
 	Device DeviceInfo
 	// Logging contains logging-specific configuration settings.
@@ -136,4 +136,24 @@ type Config struct {
 	ScheduleEvents []models.ScheduleEvent
 	// Watchers is a map provisionwatchers to be created on startup.
 	Watchers map[string]WatcherInfo
+}
+
+// ClientInfo provides the host and port of another service in the eco-system.
+type ClientInfo struct {
+	// Name is the client service name
+	Name string
+	// Host is the hostname or IP address of a service.
+	Host string
+	// Port defines the port on which to access a given service
+	Port int
+	// Protocol indicates the protocol to use when accessing a given service
+	Protocol string
+	// Timeout specifies a timeout (in milliseconds) for
+	// processing REST calls from other services.
+	Timeout int
+}
+
+func (c ClientInfo) Url() string {
+	url := fmt.Sprintf("%s://%s:%v", c.Protocol, c.Host, c.Port)
+	return url
 }

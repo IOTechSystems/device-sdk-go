@@ -3,33 +3,33 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-package device
+package clientinit
 
 import (
-	"github.com/edgexfoundry/device-sdk-go/common"
+	"github.com/edgexfoundry/device-sdk-go/internal/common"
 	"github.com/edgexfoundry/edgex-go/pkg/clients/logging"
 	"net"
 	"testing"
 )
 
 func TestInitializeLoggingClientByFile(test *testing.T) {
-	var loggingConfig = common.LoggingInfo{File: "./device-simple.log", RemoteURL: ""}
+	var loggingConfig = common.LoggingInfo{File: "./device-simple.log", EnableRemote: false}
 	var config = common.Config{Logging: loggingConfig}
-	svc = &Service{config: &config}
+	common.CurrentConfig = &config
 
 	initializeLoggingClient()
 
-	if svc.lc == nil {
+	if common.LogCli == nil {
 		test.Fatal("New file logging fail")
 	}
 
 }
 
 func TestCheckServiceAvailableByPingWithTimeoutError(test *testing.T) {
-	var clientConfig = map[string]common.RegisteredService{common.ClientData: common.RegisteredService{Host: "www.google.com", Port: 81, Timeout: 3000}}
+	var clientConfig = map[string]common.ClientInfo{common.ClientData: common.ClientInfo{Host: "www.google.com", Port: 81, Timeout: 3000}}
 	var config = common.Config{Clients: clientConfig}
-	svc = &Service{config: &config}
-	svc.lc = logger.NewClient("test_service", false, svc.config.Logging.File)
+	common.CurrentConfig = &config
+	common.LogCli = logger.NewClient("test_service", false, common.CurrentConfig.Logging.File)
 
 	err := checkServiceAvailableByPing(common.ClientData)
 

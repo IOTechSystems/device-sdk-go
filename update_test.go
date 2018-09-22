@@ -8,7 +8,7 @@ package device
 
 import (
 	"bytes"
-	"github.com/edgexfoundry/device-sdk-go/common"
+	"github.com/edgexfoundry/device-sdk-go/internal/common"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -33,14 +33,15 @@ func TestUpdate(t *testing.T) {
 	}
 
 	lc := logger.NewClient("update_test", false, "")
+	common.LogCli = lc
 	r := mux.NewRouter().PathPrefix(common.APIPrefix).Subrouter()
-	svc = &Service{Name: "update-test", lc: lc, r: r, locked: true}
+	svc = &Service{name: "update-test", r: r, locked: true}
 	initUpdate()
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var jsonStr = []byte(tt.body)
-			req := httptest.NewRequest(tt.method, common.V1Callback, bytes.NewBuffer(jsonStr))
+			req := httptest.NewRequest(tt.method, common.APICallbackRoute, bytes.NewBuffer(jsonStr))
 			req.Header.Set("Content-Type", "application/json")
 
 			rr := httptest.NewRecorder()

@@ -8,7 +8,8 @@
 package device
 
 import (
-	"github.com/edgexfoundry/device-sdk-go/mock"
+	"github.com/edgexfoundry/device-sdk-go/internal/common"
+	"github.com/edgexfoundry/device-sdk-go/internal/mock"
 	"github.com/edgexfoundry/edgex-go/pkg/models"
 	"testing"
 )
@@ -73,8 +74,8 @@ func TestCompareStrStrMap(t *testing.T) {
 
 func TestUpdateDevice(t *testing.T) {
 	svc = &Service{}
-	svc.ac = mock.AddressableClientMock{}
-	svc.dc = &mock.DeviceClientMock{}
+	common.AddrCli = mock.AddressableClientMock{}
+	common.DevCli = &mock.DeviceClientMock{}
 	devicesMap := map[string]*models.Device{
 		"meter": {Name: "meter", AdminState: models.Locked, Addressable: models.Addressable{Name: "addressable-meter"}},
 	}

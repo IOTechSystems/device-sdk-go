@@ -10,7 +10,7 @@ package device
 import (
 	"errors"
 	"fmt"
-	"github.com/edgexfoundry/device-sdk-go/common"
+	"github.com/edgexfoundry/device-sdk-go/internal/common"
 	"github.com/edgexfoundry/edgex-go/pkg/models"
 	"gopkg.in/mgo.v2/bson"
 	"sync"
@@ -63,24 +63,24 @@ func addSchedules(schedules []models.Schedule) {
 		schedule := schedules[i]
 
 		if isScheduleExist(schedule.Name) {
-			svc.lc.Info(fmt.Sprintf("Schedule (%v) exist.", schedule.Name))
+			logCli.Info(fmt.Sprintf("Schedule (%v) exist.", schedule.Name))
 			continue
 		}
 
-		id, err := svc.scc.Add(&schedule)
+		id, err := common.SchCli.Add(&schedule)
 		if err != nil {
-			svc.lc.Error(fmt.Sprintf("Add schedule (%v) fail: %v", schedule.Name, err.Error()))
+			logCli.Error(fmt.Sprintf("Add schedule (%v) fail: %v", schedule.Name, err.Error()))
 			continue
 		}
 		schedule.Id = bson.ObjectIdHex(id)
 
-		svc.lc.Info(fmt.Sprintf(fmt.Sprintf("Add schedule (%v) successful", schedule.Name)))
+		logCli.Info(fmt.Sprintf(fmt.Sprintf("Add schedule (%v) successful", schedule.Name)))
 	}
 }
 
 func isScheduleExist(scheduleName string) bool {
 	isExist := true
-	schedule, _ := svc.scc.ScheduleForName(scheduleName)
+	schedule, _ := common.SchCli.ScheduleForName(scheduleName)
 	if schedule.Name == "" {
 		isExist = false
 	}
@@ -91,28 +91,28 @@ func addScheduleEvents(scheduleEvents []models.ScheduleEvent) {
 	for i := 0; i < len(scheduleEvents); i++ {
 		scheduleEvent := scheduleEvents[i]
 		if scheduleEvent.Service == "" {
-			scheduleEvent.Service = svc.Name
+			scheduleEvent.Service = svc.name
 		}
 
 		if isScheduleEventExist(scheduleEvent.Name) {
-			svc.lc.Info(fmt.Sprintf("Schedule evnt (%v) exist", scheduleEvent.Name))
+			logCli.Info(fmt.Sprintf("Schedule evnt (%v) exist", scheduleEvent.Name))
 			continue
 		}
 
 		err := addScheduleEventAddressable(&scheduleEvent)
 		if err != nil {
-			svc.lc.Error(fmt.Sprintf("Add schedule event addressable (%v) fail: %v", scheduleEvent.Addressable.Name, err.Error()))
+			logCli.Error(fmt.Sprintf("Add schedule event addressable (%v) fail: %v", scheduleEvent.Addressable.Name, err.Error()))
 			continue
 		}
 
-		id, err := svc.scec.Add(&scheduleEvent)
+		id, err := common.SchEvtCli.Add(&scheduleEvent)
 		if err != nil {
-			svc.lc.Error(fmt.Sprintf("Add schedule event (%v) fail: %v", scheduleEvent.Name, err.Error()))
+			logCli.Error(fmt.Sprintf("Add schedule event (%v) fail: %v", scheduleEvent.Name, err.Error()))
 			continue
 		}
 		scheduleEvent.Id = bson.ObjectIdHex(id)
 
-		svc.lc.Info(fmt.Sprintf(fmt.Sprintf("Add schedule event (%v) successful", scheduleEvent.Name)))
+		logCli.Info(fmt.Sprintf(fmt.Sprintf("Add schedule event (%v) successful", scheduleEvent.Name)))
 
 	}
 }
@@ -121,7 +121,7 @@ func addScheduleEventAddressable(scheduleEvent *models.ScheduleEvent) error {
 	scheduleEvent.Addressable.Name = fmt.Sprintf("addressable-%v", scheduleEvent.Name)
 
 	if isScheduleEventAddressableExist(scheduleEvent.Addressable.Name) {
-		svc.lc.Info(fmt.Sprintf("Schedule evnt addressable (%v) exist", scheduleEvent.Addressable.Name))
+		logCli.Info(fmt.Sprintf("Schedule evnt addressable (%v) exist", scheduleEvent.Addressable.Name))
 		return nil
 	}
 
@@ -129,7 +129,7 @@ func addScheduleEventAddressable(scheduleEvent *models.ScheduleEvent) error {
 	scheduleEvent.Addressable.Address = svc.ds.Addressable.Address
 	scheduleEvent.Addressable.Port = svc.ds.Addressable.Port
 
-	addressableId, err := svc.ac.Add(&scheduleEvent.Addressable)
+	addressableId, err := common.AddrCli.Add(&scheduleEvent.Addressable)
 	if err != nil {
 		return err
 	}
@@ -141,7 +141,7 @@ func addScheduleEventAddressable(scheduleEvent *models.ScheduleEvent) error {
 
 func isScheduleEventAddressableExist(addressableName string) bool {
 	isExist := true
-	addressable, _ := svc.ac.AddressableForName(addressableName)
+	addressable, _ := common.AddrCli.AddressableForName(addressableName)
 	if addressable.Name == "" {
 		isExist = false
 	}
@@ -150,7 +150,7 @@ func isScheduleEventAddressableExist(addressableName string) bool {
 
 func isScheduleEventExist(scheduleEventName string) bool {
 	isExist := true
-	scheduleEvent, _ := svc.scec.ScheduleEventForName(scheduleEventName)
+	scheduleEvent, _ := common.SchEvtCli.ScheduleEventForName(scheduleEventName)
 	if scheduleEvent.Name == "" {
 		isExist = false
 	}

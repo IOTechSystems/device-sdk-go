@@ -11,8 +11,8 @@ import (
 	"errors"
 	"fmt"
 	"github.com/BurntSushi/toml"
-	"github.com/edgexfoundry/device-sdk-go/common"
-	"github.com/edgexfoundry/device-sdk-go/registry"
+	"github.com/edgexfoundry/device-sdk-go/internal/common"
+	"github.com/edgexfoundry/device-sdk-go/internal/registry"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -31,9 +31,12 @@ var (
 )
 
 // LoadConfig loads the local configuration file based upon the
-// specified parameters and returns a pointer to the global RegistryConfig
+// specified parameters and returns a pointer to the global Config
 // struct which holds all of the local configuration settings for
-// the DS.
+// the DS. The bool useRegisty indicates whether the registry
+// should be used to read initial config settings. This also controls
+// whether the service registers itself the registry. The profile and confDir
+// are used to locate the local TOML config file.
 func LoadConfig(useRegistry bool, profile string, confDir string) (config *common.Config, err error) {
 	fmt.Fprintf(os.Stdout, "Init: useRegistry: %v profile: %s confDir: %s\n",
 		useRegistry, profile, confDir)

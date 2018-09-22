@@ -8,6 +8,7 @@ package device
 
 import (
 	"fmt"
+	"github.com/edgexfoundry/device-sdk-go/internal/common"
 
 	"github.com/edgexfoundry/edgex-go/pkg/models"
 )
@@ -17,7 +18,7 @@ import (
 // before being pushed to Core Data.
 func processAsyncResults() {
 	for !svc.stopped {
-		readings := make([]models.Reading, 0, svc.config.Device.MaxCmdOps)
+		readings := make([]models.Reading, 0, common.CurrentConfig.Device.MaxCmdOps)
 		cr := <-svc.asyncCh
 
 		// get the device resource associated with the rsp.RO
@@ -30,10 +31,10 @@ func processAsyncResults() {
 
 		// push to Core Data
 		event := &models.Event{Device: cr.DeviceName, Readings: readings}
-		_, err := svc.ec.Add(event)
+		_, err := common.EvtCli.Add(event)
 		if err != nil {
 			msg := fmt.Sprintf("internal error; failed to push event for dev: %s to CoreData: %s", cr.DeviceName, err)
-			svc.lc.Error(msg)
+			logCli.Error(msg)
 		}
 	}
 }

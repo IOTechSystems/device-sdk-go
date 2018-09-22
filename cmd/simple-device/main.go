@@ -12,47 +12,44 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/edgexfoundry/device-sdk-go/common"
 	"os"
 	"os/signal"
 	"syscall"
 
 	"github.com/edgexfoundry/device-sdk-go"
-	configLoader "github.com/edgexfoundry/device-sdk-go/config"
+	configLoader "github.com/edgexfoundry/device-sdk-go/internal/config"
+	"github.com/edgexfoundry/device-sdk-go/internal/common"
 	"github.com/edgexfoundry/device-sdk-go/driver"
 )
 
-var flags struct {
-	configPath *string
-}
 
 func main() {
-	var useRegistry bool
-	var profile string
+	var confProfile string
 	var confDir string
 
 	flag.CommandLine = flag.NewFlagSet(os.Args[0], flag.ExitOnError) // clean up existing flag defined by other code
-	flag.BoolVar(&useRegistry, "registry", false, "Indicates the service should use the registry.")
-	flag.BoolVar(&useRegistry, "r", false, "Indicates the service should use registry.")
-	flag.StringVar(&profile, "profile", "", "Specify a profile other than default.")
-	flag.StringVar(&profile, "p", "", "Specify a profile other than default.")
+	flag.BoolVar(&common.UseRegistry, "registry", false, "Indicates the service should use the registry.")
+	flag.BoolVar(&common.UseRegistry, "r", false, "Indicates the service should use registry.")
+	flag.StringVar(&confProfile, "profile", "", "Specify a profile other than default.")
+	flag.StringVar(&confProfile, "p", "", "Specify a profile other than default.")
 	flag.StringVar(&confDir, "confdir", "", "Specify an alternate configuration directory.")
 	flag.StringVar(&confDir, "c", "", "Specify an alternate configuration directory.")
 	flag.Parse()
 
-	config, err := configLoader.LoadConfig(useRegistry, profile, confDir)
-	if err = startService(useRegistry, profile, config); err != nil {
+	config, err := configLoader.LoadConfig(common.UseRegistry, confProfile, confDir)
+	if err != nil {
 		fmt.Fprintf(os.Stderr, "error loading config file: %v\n", err)
 		os.Exit(1)
 	}
+	common.CurrentConfig = config
 
-	if err = startService(useRegistry, profile, config); err != nil {
+	if err = startService(config); err != nil {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
 		os.Exit(1)
 	}
 }
 
-func startService(useRegistry bool, profile string, config *common.Config) error {
+func startService(config *common.Config) error {
 	sd := driver.SimpleDriver{}
 
 	s, err := device.NewService(&sd)
@@ -62,10 +59,9 @@ func startService(useRegistry bool, profile string, config *common.Config) error
 
 	fmt.Fprintf(os.Stdout, "Calling service.Start.\n")
 
-	if err := s.Start(config); err != nil {
+	if err := s.Start(&config.Service); err != nil {
 		return err
 	}
-
 	fmt.Fprintf(os.Stdout, "Setting up signals.\n")
 
 	// TODO: this code never executes!

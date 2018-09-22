@@ -6,21 +6,21 @@
 package device
 
 import (
-	"github.com/edgexfoundry/device-sdk-go/common"
-	"github.com/edgexfoundry/device-sdk-go/mock"
+	"github.com/edgexfoundry/device-sdk-go/internal/common"
+	"github.com/edgexfoundry/device-sdk-go/internal/mock"
 	"github.com/edgexfoundry/edgex-go/pkg/clients/logging"
 	"github.com/edgexfoundry/edgex-go/pkg/models"
 	"testing"
 )
 
 func setup() {
-	var loggingConfig = common.LoggingInfo{File: "./device-simple.log", RemoteURL: ""}
+	var loggingConfig = common.LoggingInfo{File: "./device-simple.log"}
 	var config = common.Config{Logging: loggingConfig}
-	svc = &Service{config: &config}
-	svc.scc = &mock.ScheduleClientMock{}
-	svc.scec = &mock.ScheduleEventClientMock{}
-	svc.ac = &mock.AddressableClientMock{}
-	svc.lc = logger.NewClient("test_service", false, svc.config.Logging.File)
+	common.CurrentConfig = &config
+	common.SchCli = &mock.ScheduleClientMock{}
+	common.SchEvtCli = &mock.ScheduleEventClientMock{}
+	common.AddrCli = &mock.AddressableClientMock{}
+	logCli = logger.NewClient("test_service", false, common.CurrentConfig.Logging.File)
 }
 
 func TestNewSchedules(t *testing.T) {

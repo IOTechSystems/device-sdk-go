@@ -8,7 +8,7 @@ package device
 
 import (
 	"fmt"
-	"github.com/edgexfoundry/device-sdk-go/common"
+	"github.com/edgexfoundry/device-sdk-go/internal/common"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -32,11 +32,12 @@ const (
 // Test Command REST call when service is locked.
 func TestCommandServiceLocked(t *testing.T) {
 	lc := logger.NewClient("command_test", false, "./command_test.log")
+	logCli = lc
 	r := mux.NewRouter().PathPrefix(common.APIPrefix).Subrouter()
-	svc = &Service{Name: deviceCommandTest, lc: lc, r: r, locked: true}
+	svc = &Service{name: deviceCommandTest, r: r, locked: true}
 	initCommand()
 
-	req := httptest.NewRequest("GET", fmt.Sprintf("%s/%s/%s", common.V1Device, "nil", "nil"), nil)
+	req := httptest.NewRequest("GET", fmt.Sprintf("%s/%s/%s", common.APIDeviceRoute, "nil", "nil"), nil)
 	req = mux.SetURLVars(req, map[string]string{"deviceId": "nil", "cmd": "nil"})
 
 	rr := httptest.NewRecorder()
@@ -47,7 +48,7 @@ func TestCommandServiceLocked(t *testing.T) {
 	}
 
 	body := strings.TrimSpace(rr.Body.String())
-	expected := deviceCommandTest + " is locked; GET " + common.V1Device + "/nil/nil"
+	expected := deviceCommandTest + " is locked; GET " + common.APIDeviceRoute + "/nil/nil"
 
 	if body != expected {
 		t.Errorf("ServiceLocked: handler returned wrong body:\nexpected: %s\ngot:      %s", expected, body)
@@ -58,12 +59,13 @@ func TestCommandServiceLocked(t *testing.T) {
 // specify an existing device.
 func TestCommandNoDevice(t *testing.T) {
 	lc := logger.NewClient("command_test", false, "./command_test.log")
+	logCli = lc
 	r := mux.NewRouter().PathPrefix(common.APIPrefix).Subrouter()
-	svc = &Service{Name: deviceCommandTest, lc: lc, r: r}
+	svc = &Service{name: deviceCommandTest, r: r}
 	initCommand()
 
 	dc = &deviceCache{}
-	req := httptest.NewRequest("GET", fmt.Sprintf("%s/%s/%s", common.V1Device, badDeviceId, testCmd), nil)
+	req := httptest.NewRequest("GET", fmt.Sprintf("%s/%s/%s", common.APIDeviceRoute, badDeviceId, testCmd), nil)
 	req = mux.SetURLVars(req, map[string]string{"deviceId": badDeviceId, "cmd": testCmd})
 
 	rr := httptest.NewRecorder()
@@ -75,7 +77,7 @@ func TestCommandNoDevice(t *testing.T) {
 	}
 
 	body := strings.TrimSpace(rr.Body.String())
-	expected := "dev: " + badDeviceId + " not found; GET " + common.V1Device + "/" + badDeviceId + "/" + testCmd
+	expected := "dev: " + badDeviceId + " not found; GET " + common.APIDeviceRoute + "/" + badDeviceId + "/" + testCmd
 
 	if body != expected {
 		t.Errorf("ServiceLocked: handler returned wrong body:\nexpected: %s\ngot:      %s", expected, body)
@@ -86,8 +88,9 @@ func TestCommandNoDevice(t *testing.T) {
 // by deviceId is locked.
 func TestCommandDeviceLocked(t *testing.T) {
 	lc := logger.NewClient("command_test", false, "./command_test.log")
+	logCli = lc
 	r := mux.NewRouter().PathPrefix(common.APIPrefix).Subrouter()
-	svc = &Service{Name: deviceCommandTest, lc: lc, r: r}
+	svc = &Service{name: deviceCommandTest, r: r}
 	initCommand()
 	// Empty cache will by default have no devices.
 	dc = &deviceCache{}
@@ -102,7 +105,7 @@ func TestCommandDeviceLocked(t *testing.T) {
 		BaseObject: models.BaseObject{
 			Origin: millis,
 		},
-		Name:       s.Config.ServiceName,
+		name:       s.Config.ServiceName,
 		HTTPMethod: "POST",
 		Protocol:   "HTTP",
 		Address:    "localhost",
@@ -112,7 +115,7 @@ func TestCommandDeviceLocked(t *testing.T) {
 	addr.Origin = millis
 
 	// Create a locked Device
-	d := &models.Device{Name: "DummyDevice", AdminState: "LOCKED", OperatingState: "ENABLED"}
+	d := &models.Device{name: "DummyDevice", AdminState: "LOCKED", OperatingState: "ENABLED"}
 	d.Id = bson.ObjectIdHex(testDeviceId)
 
 	s.cd.Add(d)
