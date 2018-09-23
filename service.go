@@ -28,7 +28,7 @@ import (
 )
 
 var (
-	svc    *Service
+	svc *Service
 )
 
 // A Service listens for requests and routes them to the right command
@@ -109,7 +109,7 @@ func selfRegister() error {
 	ds, err := common.DevSvcCli.DeviceServiceForName(svc.name)
 
 	if err != nil {
-		if errsc, ok := err.(types.ErrServiceClient); ok && errsc.StatusCode == 404 {
+		if errsc, ok := err.(*types.ErrServiceClient); ok && errsc.StatusCode == 404 {
 			common.LogCli.Info(fmt.Sprintf("Device Service %s doesn't exist, creating a new one", ds.Name))
 			ds, err = createNewDeviceService()
 		} else {
