@@ -15,7 +15,7 @@ import (
 
 type ConsulEndpoint struct {
 	RegistryClient Client
-	firstRun bool
+	passFirstRun bool
 	WG *sync.WaitGroup
 }
 
@@ -29,10 +29,9 @@ func (consulEndpoint ConsulEndpoint) Monitor(params types.EndpointParams, ch cha
 		ch <- url
 
 		// After the first run, the client can be indicated initialized
-		if !consulEndpoint.firstRun {
+		if !consulEndpoint.passFirstRun {
 			consulEndpoint.WG.Done()
-		} else {
-			consulEndpoint.firstRun = true
+			consulEndpoint.passFirstRun = true
 		}
 
 		time.Sleep(time.Second * time.Duration(params.Interval))
