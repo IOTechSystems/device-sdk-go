@@ -44,7 +44,7 @@ FailWaitTime = 10
   MaxCmdValueLen = 256
   RemoveCmd = ""
   RemoveCmdArgs = ""
-  ProfilesDir = ""
+  ProfilesDir = "./res/"
   SendReadingsOnChanged = true
 
 [Logging]
