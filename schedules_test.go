@@ -20,7 +20,7 @@ func setup() {
 	common.SchCli = &mock.ScheduleClientMock{}
 	common.SchEvtCli = &mock.ScheduleEventClientMock{}
 	common.AddrCli = &mock.AddressableClientMock{}
-	logCli = logger.NewClient("test_service", false, common.CurrentConfig.Logging.File)
+	common.LogCli = logger.NewClient("test_service", false, common.CurrentConfig.Logging.File)
 }
 
 func TestNewSchedules(t *testing.T) {

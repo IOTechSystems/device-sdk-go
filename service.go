@@ -22,7 +22,6 @@ import (
 	"time"
 
 	"github.com/edgexfoundry/device-sdk-go/internal/common"
-	"github.com/edgexfoundry/edgex-go/pkg/clients/logging"
 	"github.com/edgexfoundry/edgex-go/pkg/models"
 	"github.com/gorilla/mux"
 	"gopkg.in/mgo.v2/bson"
@@ -30,7 +29,6 @@ import (
 
 var (
 	svc    *Service
-	logCli logger.LoggingClient
 )
 
 // A Service listens for requests and routes them to the right command
@@ -62,7 +60,7 @@ func (s *Service) Start(svcInfo *common.ServiceInfo) (err error) {
 
 	err = selfRegister()
 	if err != nil {
-		err = logCli.Error("Couldn't register to metadata service")
+		err = common.LogCli.Error("Couldn't register to metadata service")
 		return err
 	}
 
@@ -81,9 +79,9 @@ func (s *Service) Start(svcInfo *common.ServiceInfo) (err error) {
 		go processAsyncResults()
 	}
 
-	err = s.proto.Initialize(s, logCli, s.asyncCh)
+	err = s.proto.Initialize(s, common.LogCli, s.asyncCh)
 	if err != nil {
-		logCli.Error(fmt.Sprintf("ProtocolDriver.Initialize failure: %v; exiting.", err))
+		common.LogCli.Error(fmt.Sprintf("ProtocolDriver.Initialize failure: %v; exiting.", err))
 		return err
 	}
 
@@ -98,31 +96,31 @@ func (s *Service) Start(svcInfo *common.ServiceInfo) (err error) {
 
 	// TODO: call ListenAndServe in a goroutine
 
-	logCli.Info(fmt.Sprintf("*Service Start() called, name=%s, version=%s", s.name, common.ServiceVersion))
-	logCli.Error(http.ListenAndServe(common.Colon+strconv.Itoa(s.svcInfo.Port), s.r).Error())
-	logCli.Debug("*Service Start() exit")
+	common.LogCli.Info(fmt.Sprintf("*Service Start() called, name=%s, version=%s", s.name, common.ServiceVersion))
+	common.LogCli.Error(http.ListenAndServe(common.Colon+strconv.Itoa(s.svcInfo.Port), s.r).Error())
+	common.LogCli.Debug("*Service Start() exit")
 
 	return err
 }
 
 func selfRegister() error {
-	logCli.Debug("Trying to find Device Service: " + svc.name)
+	common.LogCli.Debug("Trying to find Device Service: " + svc.name)
 
 	ds, err := common.DevSvcCli.DeviceServiceForName(svc.name)
 
 	if err != nil {
 		if errsc, ok := err.(types.ErrServiceClient); ok && errsc.StatusCode == 404 {
-			logCli.Info(fmt.Sprintf("Device Service %s doesn't exist, creating a new one", ds.Name))
+			common.LogCli.Info(fmt.Sprintf("Device Service %s doesn't exist, creating a new one", ds.Name))
 			ds, err = createNewDeviceService()
 		} else {
-			logCli.Error(fmt.Sprintf("DeviceServicForName failed: %v", err))
+			common.LogCli.Error(fmt.Sprintf("DeviceServicForName failed: %v", err))
 			return err
 		}
 	} else {
-		logCli.Info(fmt.Sprintf("Device Service %s exists", ds.Name))
+		common.LogCli.Info(fmt.Sprintf("Device Service %s exists", ds.Name))
 	}
 
-	logCli.Debug(fmt.Sprintf("Device Service in Core MetaData: %v", ds))
+	common.LogCli.Debug(fmt.Sprintf("Device Service in Core MetaData: %v", ds))
 	svc.ds = ds
 	svc.initialized = true
 	return nil
@@ -147,18 +145,18 @@ func createNewDeviceService() (models.DeviceService, error) {
 
 	id, err := common.DevSvcCli.Add(&ds)
 	if err != nil {
-		logCli.Error(fmt.Sprintf("Add Deviceservice: %s; failed: %v", svc.name, err))
+		common.LogCli.Error(fmt.Sprintf("Add Deviceservice: %s; failed: %v", svc.name, err))
 		return models.DeviceService{}, err
 	}
 	if len(id) != 24 || !bson.IsObjectIdHex(id) {
-		logCli.Error("Add deviceservice returned invalid Id: %s", id)
+		common.LogCli.Error("Add deviceservice returned invalid Id: %s", id)
 		return models.DeviceService{}, err
 	}
 
 	// NOTE - this differs from Addressable and Device objects,
 	// neither of which require the '.Service'prefix
 	ds.Service.Id = bson.ObjectIdHex(id)
-	logCli.Debug("New deviceservice Id: " + ds.Service.Id.Hex())
+	common.LogCli.Debug("New deviceservice Id: " + ds.Service.Id.Hex())
 
 	return ds, nil
 }
@@ -168,7 +166,7 @@ func makeNewAddressable() (models.Addressable, error) {
 	addr, err := common.AddrCli.AddressableForName(svc.name)
 	if err != nil {
 		if errsc, ok := err.(types.ErrServiceClient); ok && errsc.StatusCode == 404 {
-			logCli.Info(fmt.Sprintf("Addressable %s doesn't exist, creating a new one", svc.name))
+			common.LogCli.Info(fmt.Sprintf("Addressable %s doesn't exist, creating a new one", svc.name))
 			millis := time.Now().UnixNano() / int64(time.Millisecond)
 			addr = models.Addressable{
 				BaseObject: models.BaseObject{
@@ -187,16 +185,16 @@ func makeNewAddressable() (models.Addressable, error) {
 			}
 			if len(id) != 24 || !bson.IsObjectIdHex(id) {
 				errMsg := "Add addressable returned invalid Id: " + id
-				logCli.Error(errMsg)
+				common.LogCli.Error(errMsg)
 				return models.Addressable{}, fmt.Errorf(errMsg)
 			}
 			addr.Id = bson.ObjectIdHex(id)
 		} else {
-			logCli.Error(fmt.Sprintf("AddressableForName failed: %v", err))
+			common.LogCli.Error(fmt.Sprintf("AddressableForName failed: %v", err))
 			return models.Addressable{}, err
 		}
 	} else {
-		logCli.Info(fmt.Sprintf("Addressable %s exists", svc.name))
+		common.LogCli.Info(fmt.Sprintf("Addressable %s exists", svc.name))
 	}
 
 	return addr, err

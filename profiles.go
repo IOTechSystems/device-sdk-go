@@ -56,19 +56,19 @@ func loadProfiles(path string) {
 
 	absPath, err := filepath.Abs(path)
 	if err != nil {
-		logCli.Error(fmt.Sprintf("profiles: couldn't create absolute path for: %s; %v\n", path, err))
+		common.LogCli.Error(fmt.Sprintf("profiles: couldn't create absolute path for: %s; %v\n", path, err))
 		return
 	}
 
 	profiles, err := common.DevPrfCli.DeviceProfiles()
 	if err != nil {
-		logCli.Error(fmt.Sprintf("profiles: couldn't read device profiles from Core Metadata: %v\n", err))
+		common.LogCli.Error(fmt.Sprintf("profiles: couldn't read device profiles from Core Metadata: %v\n", err))
 		return
 	}
 
 	fileInfo, err := ioutil.ReadDir(absPath)
 	if err != nil {
-		logCli.Error(fmt.Sprintf("profiles: couldn't read directory: %s; %v\n", path, err))
+		common.LogCli.Error(fmt.Sprintf("profiles: couldn't read directory: %s; %v\n", path, err))
 		return
 	}
 
@@ -81,12 +81,12 @@ func loadProfiles(path string) {
 			yamlFile, err := ioutil.ReadFile(path)
 
 			if err != nil {
-				logCli.Error(fmt.Sprintf("profiles: couldn't read file: %s; %v\n", name, err))
+				common.LogCli.Error(fmt.Sprintf("profiles: couldn't read file: %s; %v\n", name, err))
 			}
 
 			err = yaml.Unmarshal(yamlFile, &profile)
 			if err != nil {
-				logCli.Error(fmt.Sprintf("profiles: invalid deviceprofile: %s; %v\n", name, err))
+				common.LogCli.Error(fmt.Sprintf("profiles: invalid deviceprofile: %s; %v\n", name, err))
 			}
 
 			// if profile already exists in metadata, skip it
@@ -98,12 +98,12 @@ func loadProfiles(path string) {
 			// add profile to metadata
 			id, err := common.DevPrfCli.Add(&profile)
 			if err != nil {
-				logCli.Error(fmt.Sprintf("profiles: Add device profile: %s to Core Metadata failed: %v\n", name, err))
+				common.LogCli.Error(fmt.Sprintf("profiles: Add device profile: %s to Core Metadata failed: %v\n", name, err))
 				continue
 			}
 
 			if len(id) != 24 || !bson.IsObjectIdHex(id) {
-				logCli.Error("Add deviceprofile returned invalid Id: " + id)
+				common.LogCli.Error("Add deviceprofile returned invalid Id: " + id)
 				return
 			}
 
@@ -222,7 +222,7 @@ func (p *profileCache) GetResourceOperations(devName string, cmd string, method 
 // TODO: this function is based on the original Java device-sdk-tools,
 // and is too large & complicated; re-factor for simplicity, testability!
 func (p *profileCache) addDevice(d *models.Device) error {
-	logCli.Debug(fmt.Sprintf("profiles: dev: %s\n", d.Name))
+	common.LogCli.Debug(fmt.Sprintf("profiles: dev: %s\n", d.Name))
 
 	var devOps = make(map[string]map[string][]models.ResourceOperation)
 
@@ -234,7 +234,7 @@ func (p *profileCache) addDevice(d *models.Device) error {
 	// get current value descriptors from core-data
 	// ignore err, zero-value slice returned by default
 	descs, _ := common.ValDescCli.ValueDescriptors()
-	logCli.Debug(fmt.Sprintf("profiles: valuedescriptors: %v\n", descs))
+	common.LogCli.Debug(fmt.Sprintf("profiles: valuedescriptors: %v\n", descs))
 
 	// TODO: deviceprofiles with no device resources aren't supported, unlike
 	// the Java SDK-based DSs.
@@ -254,7 +254,7 @@ func (p *profileCache) addDevice(d *models.Device) error {
 	// descriptors of each command to a single list of used descriptors
 	vdNames := make(map[string]string)
 	for _, cmd := range d.Profile.Commands {
-		logCli.Debug(fmt.Sprintf("profiles: cmd: %s\n", cmd.Name))
+		common.LogCli.Debug(fmt.Sprintf("profiles: cmd: %s\n", cmd.Name))
 		cmd.AllAssociatedValueDescriptors(&vdNames)
 	}
 
@@ -263,13 +263,13 @@ func (p *profileCache) addDevice(d *models.Device) error {
 
 	}
 
-	logCli.Debug(fmt.Sprintf("profiles: usedDescriptors: %v\n", usedDescs))
+	common.LogCli.Debug(fmt.Sprintf("profiles: usedDescriptors: %v\n", usedDescs))
 
 	// ** Resources **
 
 	for _, r := range d.Profile.Resources {
 		profOps := make(map[string][]models.ResourceOperation)
-		logCli.Debug(fmt.Sprintf("\nprofiles: resource: %s\n", r.Name))
+		common.LogCli.Debug(fmt.Sprintf("\nprofiles: resource: %s\n", r.Name))
 
 		profOps["get"] = r.Get
 		profOps["set"] = r.Set
@@ -277,7 +277,7 @@ func (p *profileCache) addDevice(d *models.Device) error {
 		name := strings.ToLower(r.Name)
 
 		devOps[name] = profOps
-		logCli.Debug(fmt.Sprintf("profiles: profOps: %v\n\n", profOps))
+		common.LogCli.Debug(fmt.Sprintf("profiles: profOps: %v\n\n", profOps))
 
 		// NOTE - Java uses ArrayList.addAll, which gets rid of duplicates!
 
@@ -286,7 +286,7 @@ func (p *profileCache) addDevice(d *models.Device) error {
 			// TODO: note, Resource.Index isn't being set to 1 here...
 			//  [operation=get, object=HoldingRegister_8455, property=value, parameter=HoldingRegister_8455, mappings={}, index=1],
 			//  [operation=get, object=HoldingRegister_8455, property=value, parameter=HoldingRegister_8455, mappings={}, index=null]
-			logCli.Debug(fmt.Sprintf("profiles: adding Get ro: %v to ops\n", ro))
+			common.LogCli.Debug(fmt.Sprintf("profiles: adding Get ro: %v to ops\n", ro))
 			ops = append(ops, ro)
 		}
 
@@ -295,13 +295,13 @@ func (p *profileCache) addDevice(d *models.Device) error {
 			// TODO: note, Resource.Index isn't being set to 1 here...
 			//  [operation=get, object=HoldingRegister_8455, property=value, parameter=HoldingRegister_8455, mappings={}, index=1],
 			//  [operation=get, object=HoldingRegister_8455, property=value, parameter=HoldingRegister_8455, mappings={}, index=null]
-			logCli.Debug(fmt.Sprintf("profiles: adding Set ro: %v to ops\n", ro))
+			common.LogCli.Debug(fmt.Sprintf("profiles: adding Set ro: %v to ops\n", ro))
 			ops = append(ops, ro)
 		}
 	}
 
-	logCli.Debug(fmt.Sprintf("\n\nprofiles: ops: %v\n\n", ops))
-	logCli.Debug(fmt.Sprintf("\n\nprofiles: devOps: %v\n\n", devOps))
+	common.LogCli.Debug(fmt.Sprintf("\n\nprofiles: ops: %v\n\n", ops))
+	common.LogCli.Debug(fmt.Sprintf("\n\nprofiles: devOps: %v\n\n", devOps))
 
 	// put the device's profile objects in the objects map
 	// put the device's profile objects in the commands map if no resource exists
@@ -309,11 +309,11 @@ func (p *profileCache) addDevice(d *models.Device) error {
 	// attributes from DeviceObject.Attributes map directly
 	devObjs := make(map[string]models.DeviceObject)
 
-	logCli.Debug(fmt.Sprintf("\nprofiles: start-->DeviceResources\n\n"))
+	common.LogCli.Debug(fmt.Sprintf("\nprofiles: start-->DeviceResources\n\n"))
 
 	for _, dr := range d.Profile.DeviceResources {
 		value := dr.Properties.Value
-		logCli.Debug(fmt.Sprintf("profiles: devobject: %v\n", dr))
+		common.LogCli.Debug(fmt.Sprintf("profiles: devobject: %v\n", dr))
 
 		devObjs[dr.Name] = dr
 
@@ -325,7 +325,7 @@ func (p *profileCache) addDevice(d *models.Device) error {
 		if _, ok := devOps[name]; !ok {
 			rw := strings.ToLower(value.ReadWrite)
 
-			logCli.Debug(fmt.Sprintf("profiles: couldn't find %s in devOps; rw: %s\n", name, rw))
+			common.LogCli.Debug(fmt.Sprintf("profiles: couldn't find %s in devOps; rw: %s\n", name, rw))
 			resOps := make(map[string][]models.ResourceOperation)
 
 			if strings.Contains(rw, "r") {
@@ -340,7 +340,7 @@ func (p *profileCache) addDevice(d *models.Device) error {
 				getOp := []models.ResourceOperation{*res}
 				key := strings.ToLower(res.Operation)
 
-				logCli.Debug(fmt.Sprintf("profiles: created new get operation %s: %v\n", key, getOp))
+				common.LogCli.Debug(fmt.Sprintf("profiles: created new get operation %s: %v\n", key, getOp))
 
 				resOps[key] = getOp
 				ops = append(ops, *res)
@@ -359,7 +359,7 @@ func (p *profileCache) addDevice(d *models.Device) error {
 				setOp := []models.ResourceOperation{*res}
 				key := strings.ToLower(res.Operation)
 
-				logCli.Debug(fmt.Sprintf("profiles: created new get operation %s: %v\n", key, setOp))
+				common.LogCli.Debug(fmt.Sprintf("profiles: created new get operation %s: %v\n", key, setOp))
 
 				resOps[key] = setOp
 				ops = append(ops, *res)
@@ -370,9 +370,9 @@ func (p *profileCache) addDevice(d *models.Device) error {
 		}
 	}
 
-	logCli.Debug(fmt.Sprintf("\nprofiles: done w/devresources\n\n"))
-	logCli.Debug(fmt.Sprintf("profiles: ops: %v\n\n", ops))
-	logCli.Debug(fmt.Sprintf("\n\nprofiles: deviceOps: %v\n\n", devOps))
+	common.LogCli.Debug(fmt.Sprintf("\nprofiles: done w/devresources\n\n"))
+	common.LogCli.Debug(fmt.Sprintf("profiles: ops: %v\n\n", ops))
+	common.LogCli.Debug(fmt.Sprintf("\n\nprofiles: deviceOps: %v\n\n", devOps))
 
 	p.objects[d.Name] = devObjs
 	p.commands[d.Name] = devOps
@@ -382,11 +382,11 @@ func (p *profileCache) addDevice(d *models.Device) error {
 		var desc *models.ValueDescriptor
 		var devObj *models.DeviceObject
 
-		logCli.Debug(fmt.Sprintf("profiles: op: %v\n", op))
+		common.LogCli.Debug(fmt.Sprintf("profiles: op: %v\n", op))
 
 		// descs is []models.ValueDescriptor
 		for _, v := range descs {
-			logCli.Debug(fmt.Sprintf("profiles: addDevice: op.Parameter: %s v.name: %s\n", op.Parameter, v.Name))
+			common.LogCli.Debug(fmt.Sprintf("profiles: addDevice: op.Parameter: %s v.name: %s\n", op.Parameter, v.Name))
 			if op.Parameter == v.Name {
 				desc = &v
 				break
@@ -408,7 +408,7 @@ func (p *profileCache) addDevice(d *models.Device) error {
 			}
 
 			for _, dr := range d.Profile.DeviceResources {
-				logCli.Debug(fmt.Sprintf("ps: addDevice: op.Object: %s dr.name: %s\n", op.Object, dr.Name))
+				common.LogCli.Debug(fmt.Sprintf("ps: addDevice: op.Object: %s dr.name: %s\n", op.Object, dr.Name))
 				if op.Object == dr.Name {
 					devObj = &dr
 					break
@@ -443,7 +443,7 @@ func (p *profileCache) createDescriptor(name string, devObj models.DeviceObject)
 	value := devObj.Properties.Value
 	units := devObj.Properties.Units
 
-	logCli.Debug(fmt.Sprintf("ps: createDescriptor: %v value: %v units: %s\n", name, value, units))
+	common.LogCli.Debug(fmt.Sprintf("ps: createDescriptor: %v value: %v units: %s\n", name, value, units))
 
 	desc := &models.ValueDescriptor{
 		Name:         name,
@@ -458,17 +458,17 @@ func (p *profileCache) createDescriptor(name string, devObj models.DeviceObject)
 
 	id, err := common.ValDescCli.Add(desc)
 	if err != nil {
-		logCli.Error(fmt.Sprintf("profiles: Add ValueDescriptor failed: %v\n", err))
+		common.LogCli.Error(fmt.Sprintf("profiles: Add ValueDescriptor failed: %v\n", err))
 		return nil
 	}
 
 	if !bson.IsObjectIdHex(id) {
 		// TODO: should probably be an assertion?
-		logCli.Error(fmt.Sprintf("profiles: Add ValueDescriptor returned invalid Id: %s\n", id))
+		common.LogCli.Error(fmt.Sprintf("profiles: Add ValueDescriptor returned invalid Id: %s\n", id))
 		return nil
 	} else {
 		desc.Id = bson.ObjectIdHex(id)
-		logCli.Debug(fmt.Sprintf("profiles: createDescriptor id: %s\n", id))
+		common.LogCli.Debug(fmt.Sprintf("profiles: createDescriptor id: %s\n", id))
 	}
 
 	return desc

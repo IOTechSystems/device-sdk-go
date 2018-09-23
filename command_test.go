@@ -32,7 +32,7 @@ const (
 // Test Command REST call when service is locked.
 func TestCommandServiceLocked(t *testing.T) {
 	lc := logger.NewClient("command_test", false, "./command_test.log")
-	logCli = lc
+	common.LogCli = lc
 	r := mux.NewRouter().PathPrefix(common.APIPrefix).Subrouter()
 	svc = &Service{name: deviceCommandTest, r: r, locked: true}
 	initCommand()
@@ -59,7 +59,7 @@ func TestCommandServiceLocked(t *testing.T) {
 // specify an existing device.
 func TestCommandNoDevice(t *testing.T) {
 	lc := logger.NewClient("command_test", false, "./command_test.log")
-	logCli = lc
+	common.LogCli = lc
 	r := mux.NewRouter().PathPrefix(common.APIPrefix).Subrouter()
 	svc = &Service{name: deviceCommandTest, r: r}
 	initCommand()
@@ -88,7 +88,7 @@ func TestCommandNoDevice(t *testing.T) {
 // by deviceId is locked.
 func TestCommandDeviceLocked(t *testing.T) {
 	lc := logger.NewClient("command_test", false, "./command_test.log")
-	logCli = lc
+	common.LogCli = lc
 	r := mux.NewRouter().PathPrefix(common.APIPrefix).Subrouter()
 	svc = &Service{name: deviceCommandTest, r: r}
 	initCommand()

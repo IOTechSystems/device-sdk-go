@@ -63,18 +63,18 @@ func addSchedules(schedules []models.Schedule) {
 		schedule := schedules[i]
 
 		if isScheduleExist(schedule.Name) {
-			logCli.Info(fmt.Sprintf("Schedule (%v) exist.", schedule.Name))
+			common.LogCli.Info(fmt.Sprintf("Schedule (%v) exist.", schedule.Name))
 			continue
 		}
 
 		id, err := common.SchCli.Add(&schedule)
 		if err != nil {
-			logCli.Error(fmt.Sprintf("Add schedule (%v) fail: %v", schedule.Name, err.Error()))
+			common.LogCli.Error(fmt.Sprintf("Add schedule (%v) fail: %v", schedule.Name, err.Error()))
 			continue
 		}
 		schedule.Id = bson.ObjectIdHex(id)
 
-		logCli.Info(fmt.Sprintf(fmt.Sprintf("Add schedule (%v) successful", schedule.Name)))
+		common.LogCli.Info(fmt.Sprintf(fmt.Sprintf("Add schedule (%v) successful", schedule.Name)))
 	}
 }
 
@@ -95,24 +95,24 @@ func addScheduleEvents(scheduleEvents []models.ScheduleEvent) {
 		}
 
 		if isScheduleEventExist(scheduleEvent.Name) {
-			logCli.Info(fmt.Sprintf("Schedule evnt (%v) exist", scheduleEvent.Name))
+			common.LogCli.Info(fmt.Sprintf("Schedule evnt (%v) exist", scheduleEvent.Name))
 			continue
 		}
 
 		err := addScheduleEventAddressable(&scheduleEvent)
 		if err != nil {
-			logCli.Error(fmt.Sprintf("Add schedule event addressable (%v) fail: %v", scheduleEvent.Addressable.Name, err.Error()))
+			common.LogCli.Error(fmt.Sprintf("Add schedule event addressable (%v) fail: %v", scheduleEvent.Addressable.Name, err.Error()))
 			continue
 		}
 
 		id, err := common.SchEvtCli.Add(&scheduleEvent)
 		if err != nil {
-			logCli.Error(fmt.Sprintf("Add schedule event (%v) fail: %v", scheduleEvent.Name, err.Error()))
+			common.LogCli.Error(fmt.Sprintf("Add schedule event (%v) fail: %v", scheduleEvent.Name, err.Error()))
 			continue
 		}
 		scheduleEvent.Id = bson.ObjectIdHex(id)
 
-		logCli.Info(fmt.Sprintf(fmt.Sprintf("Add schedule event (%v) successful", scheduleEvent.Name)))
+		common.LogCli.Info(fmt.Sprintf(fmt.Sprintf("Add schedule event (%v) successful", scheduleEvent.Name)))
 
 	}
 }
@@ -121,7 +121,7 @@ func addScheduleEventAddressable(scheduleEvent *models.ScheduleEvent) error {
 	scheduleEvent.Addressable.Name = fmt.Sprintf("addressable-%v", scheduleEvent.Name)
 
 	if isScheduleEventAddressableExist(scheduleEvent.Addressable.Name) {
-		logCli.Info(fmt.Sprintf("Schedule evnt addressable (%v) exist", scheduleEvent.Addressable.Name))
+		common.LogCli.Info(fmt.Sprintf("Schedule evnt addressable (%v) exist", scheduleEvent.Addressable.Name))
 		return nil
 	}
 

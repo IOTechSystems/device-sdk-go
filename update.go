@@ -9,6 +9,7 @@ package device
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/edgexfoundry/device-sdk-go/internal/common"
 	"io"
 	"net/http"
 
@@ -23,13 +24,13 @@ func callbackHandler(w http.ResponseWriter, req *http.Request) {
 	err := dec.Decode(&cbAlert)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
-		logCli.Error(fmt.Sprintf("Invalid callback request: %v", err))
+		common.LogCli.Error(fmt.Sprintf("Invalid callback request: %v", err))
 		return
 	}
 
 	if (cbAlert.Id == "") || (cbAlert.ActionType == "") {
 		http.Error(w, "Missing parameters", http.StatusBadRequest)
-		logCli.Error(fmt.Sprintf("Missing callback parameters"))
+		common.LogCli.Error(fmt.Sprintf("Missing callback parameters"))
 		return
 	}
 
@@ -39,14 +40,14 @@ func callbackHandler(w http.ResponseWriter, req *http.Request) {
 	if (cbAlert.ActionType == models.DEVICE) && (req.Method == http.MethodPut) {
 		err = dc.UpdateAdminState(cbAlert.Id)
 		if err == nil {
-			logCli.Info(fmt.Sprintf("Updated device %s admin state", cbAlert.Id))
+			common.LogCli.Info(fmt.Sprintf("Updated device %s admin state", cbAlert.Id))
 		} else {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
-			logCli.Error(fmt.Sprintf("Couldn't update device %s admin state: %v", cbAlert.Id, err.Error()))
+			common.LogCli.Error(fmt.Sprintf("Couldn't update device %s admin state: %v", cbAlert.Id, err.Error()))
 			return
 		}
 	} else {
-		logCli.Error(fmt.Sprintf("Invalid device method and/or action type: %s - %s", req.Method, cbAlert.ActionType))
+		common.LogCli.Error(fmt.Sprintf("Invalid device method and/or action type: %s - %s", req.Method, cbAlert.ActionType))
 		http.Error(w, "Invalid device method and/or action type", http.StatusBadRequest)
 		return
 	}

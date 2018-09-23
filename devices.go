@@ -58,18 +58,18 @@ func newDeviceCache(serviceId string) error {
 
 		mDevs, err := common.DevCli.DevicesForService(serviceId)
 		if err != nil {
-			logCli.Error(fmt.Sprintf("DevicesForService error: %v\n", err))
+			common.LogCli.Error(fmt.Sprintf("DevicesForService error: %v\n", err))
 			retval = err
 		}
 
-		logCli.Debug(fmt.Sprintf("returned devices %v\n", mDevs))
+		common.LogCli.Debug(fmt.Sprintf("returned devices %v\n", mDevs))
 
 		dc.InitDeviceCache()
 
 		for index, _ := range mDevs {
 			err = common.DevCli.UpdateOpState(mDevs[index].Id.Hex(), "DISABLED")
 			if err != nil {
-				logCli.Error(fmt.Sprintf("Update metadata DeviceOpState failed: %s; error: %v", mDevs[index].Name, err))
+				common.LogCli.Error(fmt.Sprintf("Update metadata DeviceOpState failed: %s; error: %v", mDevs[index].Name, err))
 			}
 
 			mDevs[index].OperatingState = models.OperatingState("DISABLED")
@@ -77,7 +77,7 @@ func newDeviceCache(serviceId string) error {
 		}
 
 		// TODO: call Protocol.initialize
-		logCli.Debug(fmt.Sprintf("dstore: INITIALIZATION DONE! err=%v\n", err))
+		common.LogCli.Debug(fmt.Sprintf("dstore: INITIALIZATION DONE! err=%v\n", err))
 	})
 
 	return retval
@@ -101,7 +101,7 @@ func (d *deviceCache) Add(dev *models.Device) error {
 		// TODO: remove from profiles
 	}
 
-	logCli.Debug(fmt.Sprintf("Adding managed device: : %v\n", dev))
+	common.LogCli.Debug(fmt.Sprintf("Adding managed device: : %v\n", dev))
 
 	// TODO: per effective go, should these two stmts be collapsed?
 	// check if this is commonly used in Go src & snapd.
@@ -112,7 +112,7 @@ func (d *deviceCache) Add(dev *models.Device) error {
 
 	// This is only the case for brand new devices
 	if dev.OperatingState == models.OperatingState("ENABLED") {
-		logCli.Debug(fmt.Sprintf("Initializing device: : %v\n", dev))
+		common.LogCli.Debug(fmt.Sprintf("Initializing device: : %v\n", dev))
 		// TODO: ${Protocol name}.initializeDevice(metaDevice);
 	}
 
@@ -222,10 +222,10 @@ func (d *deviceCache) UpdateAdminState(id string) error {
 // DeviceStore implementation.
 func (d *deviceCache) addDeviceToMetadata(dev *models.Device) error {
 	// TODO: fix metadata to indicate !found, vs. returned zeroed struct!
-	logCli.Debug(fmt.Sprintf("Trying to find addressable for: %s\n", dev.Addressable.Name))
+	common.LogCli.Debug(fmt.Sprintf("Trying to find addressable for: %s\n", dev.Addressable.Name))
 	addr, err := common.AddrCli.AddressableForName(dev.Addressable.Name)
 	if err != nil {
-		logCli.Error(fmt.Sprintf("AddressClient.AddressableForName: %s; failed: %v\n", dev.Addressable.Name, err))
+		common.LogCli.Error(fmt.Sprintf("AddressClient.AddressableForName: %s; failed: %v\n", dev.Addressable.Name, err))
 
 		// If device exists in metadata, and lacks an Addressable, don't try to fix; skip instead
 		if dev.Id.Valid() {
@@ -237,11 +237,11 @@ func (d *deviceCache) addDeviceToMetadata(dev *models.Device) error {
 	if addr.Name != dev.Addressable.Name {
 		addr = dev.Addressable
 		addr.BaseObject.Origin = time.Now().UnixNano() * int64(time.Nanosecond) / int64(time.Microsecond)
-		logCli.Debug(fmt.Sprintf("Creating new Addressable Object with name: %v", addr))
+		common.LogCli.Debug(fmt.Sprintf("Creating new Addressable Object with name: %v", addr))
 
 		id, err := common.AddrCli.Add(&addr)
 		if err != nil {
-			logCli.Error(fmt.Sprintf("AddressClient.Add: %s; failed: %v\n", dev.Addressable.Name, err))
+			common.LogCli.Error(fmt.Sprintf("AddressClient.Add: %s; failed: %v\n", dev.Addressable.Name, err))
 			return err
 		}
 
@@ -253,25 +253,25 @@ func (d *deviceCache) addDeviceToMetadata(dev *models.Device) error {
 			return fmt.Errorf("Add addressable returned invalid Id: %s\n", id)
 		} else {
 			addr.Id = bson.ObjectIdHex(id)
-			logCli.Debug(fmt.Sprintf("New addressable Id: %s\n", addr.Id.Hex()))
+			common.LogCli.Debug(fmt.Sprintf("New addressable Id: %s\n", addr.Id.Hex()))
 		}
 	}
 
 	// A device without a valid Id is new
 	if dev.Id.Valid() == false {
-		logCli.Debug(fmt.Sprintf("Trying to find device for: %s\n", dev.Name))
+		common.LogCli.Debug(fmt.Sprintf("Trying to find device for: %s\n", dev.Name))
 		mDev, err := common.DevCli.DeviceForName(dev.Name)
 		if err != nil {
-			logCli.Error(fmt.Sprintf("DeviceClient.DeviceForName: %s; failed: %v\n", dev.Name, err))
+			common.LogCli.Error(fmt.Sprintf("DeviceClient.DeviceForName: %s; failed: %v\n", dev.Name, err))
 		}
 
 		// TODO: this is the best test for not-found for now...
 		if mDev.Name != dev.Name {
-			logCli.Debug(fmt.Sprintf("Adding Device to Metadata: %s\n", dev.Name))
+			common.LogCli.Debug(fmt.Sprintf("Adding Device to Metadata: %s\n", dev.Name))
 
 			id, err := common.DevCli.Add(dev)
 			if err != nil {
-				logCli.Error(fmt.Sprintf("DeviceClient.Add for %s failed: %v", dev.Name, err))
+				common.LogCli.Error(fmt.Sprintf("DeviceClient.Add for %s failed: %v", dev.Name, err))
 				return err
 			}
 
@@ -283,7 +283,7 @@ func (d *deviceCache) addDeviceToMetadata(dev *models.Device) error {
 				return fmt.Errorf("DeviceClient Add returned invalid id: %s\n", id)
 			} else {
 				dev.Id = bson.ObjectIdHex(id)
-				logCli.Debug(fmt.Sprintf("New dev id: %s\n", dev.Id.Hex()))
+				common.LogCli.Debug(fmt.Sprintf("New dev id: %s\n", dev.Id.Hex()))
 			}
 		} else {
 			dev.Id = mDev.Id
@@ -291,7 +291,7 @@ func (d *deviceCache) addDeviceToMetadata(dev *models.Device) error {
 			if dev.OperatingState != mDev.OperatingState {
 				err := common.DevCli.UpdateOpState(dev.Id.Hex(), string(dev.OperatingState))
 				if err != nil {
-					logCli.Error(fmt.Sprintf("DeviceClient.UpdateOpState: %s; failed: %v\n", dev.Name, err))
+					common.LogCli.Error(fmt.Sprintf("DeviceClient.UpdateOpState: %s; failed: %v\n", dev.Name, err))
 				}
 			}
 			// TODO: Java service doesn't check result, if UpdateOpState fails,

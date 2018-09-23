@@ -34,7 +34,7 @@ func processAsyncResults() {
 		_, err := common.EvtCli.Add(event)
 		if err != nil {
 			msg := fmt.Sprintf("internal error; failed to push event for dev: %s to CoreData: %s", cr.DeviceName, err)
-			logCli.Error(msg)
+			common.LogCli.Error(msg)
 		}
 	}
 }
