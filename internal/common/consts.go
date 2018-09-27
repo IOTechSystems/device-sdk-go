@@ -13,7 +13,7 @@ const (
 
 	ClientData     = "Data"
 	ClientMetadata = "Metadata"
-	ClientLogging = "Logging"
+	ClientLogging  = "Logging"
 
 	APIPrefix  = "/api/v1"
 	Colon      = ":"

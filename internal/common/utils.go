@@ -21,4 +21,3 @@ func BuildAddr(host string, port string) string {
 
 	return buffer.String()
 }
-

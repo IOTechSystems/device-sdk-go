@@ -4,9 +4,8 @@
 // Copyright (C) 2018 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
-//
+
 // This package provides a simple example of a device service.
-//
 package main
 
 import (
@@ -17,11 +16,10 @@ import (
 	"syscall"
 
 	"github.com/edgexfoundry/device-sdk-go"
-	configLoader "github.com/edgexfoundry/device-sdk-go/internal/config"
-	"github.com/edgexfoundry/device-sdk-go/internal/common"
 	"github.com/edgexfoundry/device-sdk-go/driver"
+	"github.com/edgexfoundry/device-sdk-go/internal/common"
+	configLoader "github.com/edgexfoundry/device-sdk-go/internal/config"
 )
-
 
 func main() {
 	var confProfile string

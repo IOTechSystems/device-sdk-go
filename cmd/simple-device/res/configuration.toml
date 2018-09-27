@@ -17,21 +17,21 @@ FailWaitTime = 10
 
 [Clients]
   [Clients.Data]
-  name = "edgex-core-data"
+  Name = "edgex-core-data"
   Protocol = "http"
   Host = "localhost"
   Port = 48080
   Timeout = 50000
 
   [Clients.Metadata]
-  name = "edgex-core-metadata"
+  Name = "edgex-core-metadata"
   Protocol = "http"
   Host = "localhost"
   Port = 48081
   Timeout = 50000
 
   [Clients.Logging]
-  name = "edgex-support-logging"
+  Name = "edgex-support-logging"
   Protocol = "http"
   Host = "localhost"
   Port = 48061
@@ -44,7 +44,7 @@ FailWaitTime = 10
   MaxCmdValueLen = 256
   RemoveCmd = ""
   RemoveCmdArgs = ""
-  ProfilesDir = ""
+  ProfilesDir = "./res"
   SendReadingsOnChanged = true
 
 [Logging]
@@ -52,43 +52,74 @@ EnableRemote = false
 File = "./device-simple.log"
 
 # Pre-define Schedule Configuration
-[[schedules]]
-name = "10sec-schedule"
-frequency = "PT10S"
+[[Schedules]]
+Name = "10sec-schedule"
+Frequency = "PT10S"
 
-[[scheduleEvents]]
-name = "readTemperature"
-schedule = "10sec-schedule"
-  [scheduleEvents.Addressable]
-  method = "GET"
-  path = "/api/v1/device/name/JC.RR5.NAE9.ConfRoom.Padre.Island/temperature"
+[[ScheduleEvents]]
+Name = "readTemperature"
+Schedule = "10sec-schedule"
+  [ScheduleEvents.Addressable]
+  Method = "GET"
+  Path = "/api/v1/device/name/JC.RR5.NAE9.ConfRoom.Padre.Island/temperature"
 
-[[scheduleEvents]]
-name = "readHumidity"
-schedule = "10sec-schedule"
-  [scheduleEvents.Addressable]
-  method = "GET"
-  path = "/api/v1/device/name/JC.RR5.NAE9.ConfRoom.Padre.Island/humidity"
+[[ScheduleEvents]]
+Name = "readHumidity"
+Schedule = "10sec-schedule"
+  [ScheduleEvents.Addressable]
+  Method = "GET"
+  Path = "/api/v1/device/name/JC.RR5.NAE9.ConfRoom.Padre.Island/humidity"
 
 # trigger schedule by support-scheduler
-[[scheduleEvents]]
-name = "readTemperature"
-schedule = "10sec-schedule"
-service="edgex-support-scheduler"
-  [scheduleEvents.Addressable]
-  protocol = "HTTP"
-  method = "GET"
-  address = "edgex-device-simple"
-  port = 49991
-  path = "/api/v1/device/name/JC.RR5.NAE9.ConfRoom.Padre.Island/temperature"
+[[ScheduleEvents]]
+Name = "readTemperature"
+Schedule = "10sec-schedule"
+Service="edgex-support-scheduler"
+  [ScheduleEvents.Addressable]
+  Protocol = "HTTP"
+  Method = "GET"
+  Address = "edgex-device-simple"
+  Port = 49991
+  Path = "/api/v1/device/name/JC.RR5.NAE9.ConfRoom.Padre.Island/temperature"
 
-[[schedules]]
-name = "5sec-schedule"
-frequency = "PT5S"
+[[Schedules]]
+Name = "5sec-schedule"
+Frequency = "PT5S"
 
-[[scheduleEvents]]
-name = "readVoltage"
-schedule = "5sec-schedule"
-  [scheduleEvents.Addressable]
-  method = "GET"
-  path = "/api/v1/device/name/GS1-AC-Drive/voltage"
+[[ScheduleEvents]]
+Name = "readVoltage"
+Schedule = "5sec-schedule"
+  [ScheduleEvents.Addressable]
+  Method = "GET"
+  Path = "/api/v1/device/name/GS1-AC-Drive/voltage"
+
+# Pre-define Devices
+[[DeviceList]]
+  Name = "JC.RR5.NAE9.ConfRoom.Padre.Island01"
+  Profile = "JC.RR5.NAE9.ConfRoom.Padre.Island"
+  Description = "US RR5-2 Padre Island Conference Room"
+  Labels = [ "thermostat", "industrial" ]
+  [DeviceList.Addressable]
+    Address = "bacnet01"
+    Port = 300
+    Protocol = "OTHER"
+
+[[DeviceList]]
+  Name = "KMC.BAC-121036CE01"
+  Profile = "KMC.BAC-121036CE"
+  Description = "KMC BAC-121036CE BACnet thermostat"
+  Labels = [ "thermostat", "industrial" ]
+  [DeviceList.Addressable]
+    Address = "bacnet02"
+    Port = 300
+    Protocol = "OTHER"
+
+[[DeviceList]]
+  Name = "GS1-AC-Drive01"
+  Profile = "GS1-AC-Drive"
+  Description = "GS1 AC Drive"
+  Labels = [ "modbus", "industrial" ]
+  [DeviceList.Addressable]
+    Address = "modbus01"
+    Port = 503
+    Protocol = "TCP"

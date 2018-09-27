@@ -136,6 +136,22 @@ type Config struct {
 	ScheduleEvents []models.ScheduleEvent
 	// Watchers is a map provisionwatchers to be created on startup.
 	Watchers map[string]WatcherInfo
+	// DeviceList is the list of pre-define Devices
+	DeviceList []DeviceConfig
+}
+
+// DeviceConfig is the definition of Devices which will be auto created when the Device Service starts up
+type DeviceConfig struct {
+	// Name is the Device name
+	Name string
+	// Profile is the profile name of the Device
+	Profile string
+
+	Description string
+	// Other labels applied to the device to help with searching
+	Labels []string
+	// Addressable for the device - stores information about it's address
+	Addressable models.Addressable
 }
 
 // ClientInfo provides the host and port of another service in the eco-system.

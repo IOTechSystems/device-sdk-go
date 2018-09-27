@@ -67,12 +67,6 @@ func newDeviceCache(serviceId string) error {
 		dc.InitDeviceCache()
 
 		for index, _ := range mDevs {
-			err = common.DevCli.UpdateOpState(mDevs[index].Id.Hex(), "DISABLED")
-			if err != nil {
-				common.LogCli.Error(fmt.Sprintf("Update metadata DeviceOpState failed: %s; error: %v", mDevs[index].Name, err))
-			}
-
-			mDevs[index].OperatingState = models.OperatingState("DISABLED")
 			dc.Add(&mDevs[index])
 		}
 
