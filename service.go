@@ -135,6 +135,7 @@ func selfRegister() error {
 func createNewDeviceService() (models.DeviceService, error) {
 	addr, err := makeNewAddressable()
 	if err != nil {
+		common.LogCli.Error(fmt.Sprintf("makeNewAddressable failed: %v", err))
 		return models.DeviceService{}, err
 	}
 	millis := time.Now().UnixNano() / int64(time.Millisecond)
@@ -171,7 +172,7 @@ func makeNewAddressable() (*models.Addressable, error) {
 	// check whether there has been an existing addressable
 	addr, err := common.AddrCli.AddressableForName(svc.name)
 	if err != nil {
-		if errsc, ok := err.(types.ErrServiceClient); ok && errsc.StatusCode == 404 {
+		if errsc, ok := err.(*types.ErrServiceClient); ok && errsc.StatusCode == 404 {
 			common.LogCli.Info(fmt.Sprintf("Addressable %s doesn't exist, creating a new one", svc.name))
 			millis := time.Now().UnixNano() / int64(time.Millisecond)
 			addr = models.Addressable{
@@ -187,6 +188,7 @@ func makeNewAddressable() (*models.Addressable, error) {
 			}
 			id, err := common.AddrCli.Add(&addr)
 			if err != nil {
+				common.LogCli.Error(fmt.Sprintf("Add addressable failed %v, error: %v", addr, err))
 				return nil, err
 			}
 			if len(id) != 24 || !bson.IsObjectIdHex(id) {
@@ -203,7 +205,7 @@ func makeNewAddressable() (*models.Addressable, error) {
 		common.LogCli.Info(fmt.Sprintf("Addressable %s exists", svc.name))
 	}
 
-	return &addr, err
+	return &addr, nil
 }
 
 // Stop shuts down the Service

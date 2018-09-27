@@ -42,7 +42,7 @@ func LoadConfig(useRegistry bool, profile string, confDir string) (config *commo
 	var confName string
 
 	if len(confDir) == 0 {
-		confDir = "./res/"
+		confDir = "./res"
 	}
 
 	if len(profile) > 0 {
@@ -51,7 +51,7 @@ func LoadConfig(useRegistry bool, profile string, confDir string) (config *commo
 		confName = "configuration.toml"
 	}
 
-	path := confDir + confName
+	path := confDir + "/" + confName
 
 	// As the toml package can panic if TOML is invalid,
 	// or elements are found that don't match members of
