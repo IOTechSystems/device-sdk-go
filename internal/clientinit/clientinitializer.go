@@ -43,7 +43,6 @@ func InitDependencyClients() error {
 	return nil
 }
 
-
 func validateClientConfig() error {
 
 	if len(common.CurrentConfig.Clients[common.ClientMetadata].Host) == 0 {
@@ -207,7 +206,7 @@ func initializeClients() {
 
 	params := types.EndpointParams{
 		UseRegistry: isUG,
-		Interval: 15,
+		Interval:    15,
 	}
 
 	// initialize Core Metadata clients

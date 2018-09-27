@@ -88,7 +88,7 @@ commands:
           -
             code: "200"
             description: ""
-            expectedValues: ["AnalogValue_40"]
+            expectedValues: ["CurrentTemperature"]
           -
             code: "503"
             description: "service unavailable"
@@ -101,7 +101,7 @@ commands:
           -
             code: "200"
             description: ""
-            expectedValues: ["AnalogValue_22"]
+            expectedValues: ["CurrentHumidity"]
           -
             code: "503"
             description: "service unavailable"
@@ -114,7 +114,7 @@ commands:
           -
             code: "200"
             description: ""
-            expectedValues: ["AnalogValue_20"]
+            expectedValues: ["OccupiedCoolingSetPoint"]
           -
             code: "503"
             description: "service unavailable"
@@ -127,7 +127,7 @@ commands:
           -
             code: "200"
             description: ""
-            expectedValues: ["AnalogValue_21"]
+            expectedValues: ["OccupiedHeatingSetPoint"]
           -
             code: "503"
             description: "service unavailable"

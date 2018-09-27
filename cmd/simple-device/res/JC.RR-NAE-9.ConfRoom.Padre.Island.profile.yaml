@@ -58,7 +58,7 @@ commands:
           - 
             code: "200"
             description: ""
-            expectedValues: ["AnalogInput_3000290"]
+            expectedValues: ["CurrentTemperature"]
           -
             code: "503"
             description: "service unavailable"
@@ -71,7 +71,7 @@ commands:
           -
             code: "200"
             description: ""
-            expectedValues: ["AnalogOutput_3000289"]
+            expectedValues: ["SetPoint"]
           -
             code: "503"
             description: "service unavailable"

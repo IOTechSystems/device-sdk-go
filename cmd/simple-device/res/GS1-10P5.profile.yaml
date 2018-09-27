@@ -74,7 +74,7 @@ commands:
           -
             code: "200"
             description: ""
-            expectedValues: ["HoldingRegister_8455"]
+            expectedValues: ["OutputVoltage"]
           -
             code: "503"
             description: "service unavailable"
@@ -87,7 +87,7 @@ commands:
           -
             code: "200"
             description: ""
-            expectedValues: ["HoldingRegister_2331"]
+            expectedValues: ["Status"]
           -
             code: "503"
             description: "service unavailable"
@@ -100,7 +100,7 @@ commands:
           -
             code: "200"
             description: ""
-            expectedValues: ["HoldingRegister_8454"]
+            expectedValues: ["RPM"]
           -
             code: "503"
             description: "service unavailable"

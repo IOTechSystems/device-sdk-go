@@ -10,12 +10,17 @@
 // creation of object caches, REST APIs, and basic service functionality.
 // Clients of this package must provide concrete implementations of the
 // device-specific interfaces (e.g. ProtocolDriver).
-//
+
+// This package provides a basic EdgeX Foundry device service implementation
+// meant to be embedded in an application, similar in approach to the builtin
+// net/http package.
 package device
 
 import (
 	"fmt"
+	"github.com/edgexfoundry/device-sdk-go/internal/cache"
 	"github.com/edgexfoundry/device-sdk-go/internal/clientinit"
+	"github.com/edgexfoundry/device-sdk-go/internal/provision"
 	"github.com/edgexfoundry/edgex-go/pkg/clients/types"
 	"net/http"
 	"strconv"
@@ -65,8 +70,9 @@ func (s *Service) Start(svcInfo *common.ServiceInfo) (err error) {
 	}
 
 	// initialize devices, objects & profiles
-	newProfileCache()
-	newDeviceCache(s.ds.Service.Id.Hex())
+	cache.InitCache()
+	provision.LoadProfiles(common.CurrentConfig.Device.ProfilesDir)
+
 	s.cw = newWatchers()
 	// initialize scheduler
 	s.scca = getScheduleCache(common.CurrentConfig)
@@ -137,7 +143,7 @@ func createNewDeviceService() (models.DeviceService, error) {
 			Name:           svc.name,
 			Labels:         svc.svcInfo.Labels,
 			OperatingState: "ENABLED",
-			Addressable:    addr,
+			Addressable:    *addr,
 		},
 		AdminState: "UNLOCKED",
 	}
@@ -161,7 +167,7 @@ func createNewDeviceService() (models.DeviceService, error) {
 	return ds, nil
 }
 
-func makeNewAddressable() (models.Addressable, error) {
+func makeNewAddressable() (*models.Addressable, error) {
 	// check whether there has been an existing addressable
 	addr, err := common.AddrCli.AddressableForName(svc.name)
 	if err != nil {
@@ -181,23 +187,23 @@ func makeNewAddressable() (models.Addressable, error) {
 			}
 			id, err := common.AddrCli.Add(&addr)
 			if err != nil {
-				return models.Addressable{}, err
+				return nil, err
 			}
 			if len(id) != 24 || !bson.IsObjectIdHex(id) {
 				errMsg := "Add addressable returned invalid Id: " + id
 				common.LogCli.Error(errMsg)
-				return models.Addressable{}, fmt.Errorf(errMsg)
+				return nil, fmt.Errorf(errMsg)
 			}
 			addr.Id = bson.ObjectIdHex(id)
 		} else {
 			common.LogCli.Error(fmt.Sprintf("AddressableForName failed: %v", err))
-			return models.Addressable{}, err
+			return nil, err
 		}
 	} else {
 		common.LogCli.Info(fmt.Sprintf("Addressable %s exists", svc.name))
 	}
 
-	return addr, err
+	return &addr, err
 }
 
 // Stop shuts down the Service

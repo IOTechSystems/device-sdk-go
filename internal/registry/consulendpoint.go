@@ -15,8 +15,8 @@ import (
 
 type ConsulEndpoint struct {
 	RegistryClient Client
-	passFirstRun bool
-	WG *sync.WaitGroup
+	passFirstRun   bool
+	WG             *sync.WaitGroup
 }
 
 func (consulEndpoint ConsulEndpoint) Monitor(params types.EndpointParams, ch chan string) {

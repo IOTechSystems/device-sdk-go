@@ -20,8 +20,8 @@ import (
 )
 
 const (
-	yamlExt           = ".yaml"
-	yamlExtUpper      = ".YAML"
+	yamlExt      = ".yaml"
+	yamlExtUpper = ".YAML"
 )
 
 // profileCache is a local cache of devices seeded from Core Metadata.

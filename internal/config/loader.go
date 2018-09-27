@@ -4,7 +4,7 @@
 // Copyright (C) 2018 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
-//
+
 package config
 
 import (
@@ -20,13 +20,12 @@ import (
 	"time"
 )
 
-
 const consulStatusPath = "/v1/agent/self"
 
 var (
 	// Need to set timeout because it hang until server close connection
 	// https://medium.com/@nate510/don-t-use-go-s-default-http-client-4804cb19f779
-	netClient = &http.Client{Timeout: time.Second * 10}
+	netClient      = &http.Client{Timeout: time.Second * 10}
 	RegistryClient registry.Client
 )
 
