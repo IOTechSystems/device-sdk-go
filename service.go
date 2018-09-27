@@ -4,7 +4,7 @@
 // Copyright (C) 2018 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
-//
+
 // Package service(service?) implements the core logic of a device service,
 // which include loading config, handling service registration,
 // creation of object caches, REST APIs, and basic service functionality.

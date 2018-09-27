@@ -3,7 +3,7 @@
 // Copyright (C) 2017-2018 Canonical Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
-//
+
 // This package provides a simple example implementation of
 // a ProtocolDriver interface.
 //

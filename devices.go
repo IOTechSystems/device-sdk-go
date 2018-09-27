@@ -4,7 +4,7 @@
 // Copyright (C) 2018 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
-//
+
 // This package provides management of device service related
 // objects that may be distributed across one or more EdgeX
 // core microservices.
