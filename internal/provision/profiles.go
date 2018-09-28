@@ -57,18 +57,20 @@ func LoadProfiles(path string) error {
 		if strings.HasSuffix(lfName, yamlExt) || strings.HasSuffix(lfName, ymlExt) {
 			fullPath := absPath + "/" + fName
 			yamlFile, err := ioutil.ReadFile(fullPath)
-
 			if err != nil {
 				common.LogCli.Error(fmt.Sprintf("profiles: couldn't read file: %s; %v\n", fullPath, err))
+				continue
 			}
 
 			err = yaml.Unmarshal(yamlFile, &profile)
 			if err != nil {
 				common.LogCli.Error(fmt.Sprintf("profiles: invalid Device Profile: %s; %v\n", fullPath, err))
+				continue
 			}
 
 			// if profile already exists in metadata, skip it
-			if _, ok := pMap[profile.Name]; ok {
+			if p, ok := pMap[profile.Name]; ok {
+				cache.Profiles().Add(p)
 				continue
 			}
 
@@ -81,7 +83,7 @@ func LoadProfiles(path string) error {
 
 			if len(id) != 24 || !bson.IsObjectIdHex(id) {
 				common.LogCli.Error("Add Device Profile returned invalid Id: " + id)
-				return err
+				continue
 			}
 
 			profile.Id = bson.ObjectIdHex(id)

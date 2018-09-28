@@ -125,9 +125,9 @@ func addScheduleEventAddressable(scheduleEvent *models.ScheduleEvent) error {
 		return nil
 	}
 
-	scheduleEvent.Addressable.Protocol = svc.ds.Addressable.Protocol
-	scheduleEvent.Addressable.Address = svc.ds.Addressable.Address
-	scheduleEvent.Addressable.Port = svc.ds.Addressable.Port
+	scheduleEvent.Addressable.Protocol = common.CurrentDeviceService.Addressable.Protocol
+	scheduleEvent.Addressable.Address = common.CurrentDeviceService.Addressable.Address
+	scheduleEvent.Addressable.Port = common.CurrentDeviceService.Addressable.Port
 
 	addressableId, err := common.AddrCli.Add(&scheduleEvent.Addressable)
 	if err != nil {

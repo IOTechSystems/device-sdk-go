@@ -5,12 +5,6 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-// Package service(service?) implements the core logic of a device service,
-// which include loading config, handling service registration,
-// creation of object caches, REST APIs, and basic service functionality.
-// Clients of this package must provide concrete implementations of the
-// device-specific interfaces (e.g. ProtocolDriver).
-
 // This package provides a basic EdgeX Foundry device service implementation
 // meant to be embedded in an application, similar in approach to the builtin
 // net/http package.
@@ -46,7 +40,6 @@ type Service struct {
 	initialized   bool
 	locked        bool
 	stopped       bool
-	ds            models.DeviceService
 	r             *mux.Router
 	scca          ScheduleCacheInterface
 	cw            *Watchers
@@ -72,6 +65,7 @@ func (s *Service) Start(svcInfo *common.ServiceInfo) (err error) {
 	// initialize devices, objects & profiles
 	cache.InitCache()
 	provision.LoadProfiles(common.CurrentConfig.Device.ProfilesDir)
+	provision.LoadDevices(common.CurrentConfig.DeviceList)
 
 	s.cw = newWatchers()
 	// initialize scheduler
@@ -127,7 +121,7 @@ func selfRegister() error {
 	}
 
 	common.LogCli.Debug(fmt.Sprintf("Device Service in Core MetaData: %v", ds))
-	svc.ds = ds
+	common.CurrentDeviceService = ds
 	svc.initialized = true
 	return nil
 }
