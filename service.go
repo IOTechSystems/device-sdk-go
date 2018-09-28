@@ -14,6 +14,7 @@ import (
 	"fmt"
 	"github.com/edgexfoundry/device-sdk-go/internal/cache"
 	"github.com/edgexfoundry/device-sdk-go/internal/clientinit"
+	"github.com/edgexfoundry/device-sdk-go/internal/controller"
 	"github.com/edgexfoundry/device-sdk-go/internal/provision"
 	"github.com/edgexfoundry/edgex-go/pkg/clients/types"
 	"net/http"
@@ -22,7 +23,6 @@ import (
 
 	"github.com/edgexfoundry/device-sdk-go/internal/common"
 	"github.com/edgexfoundry/edgex-go/pkg/models"
-	"github.com/gorilla/mux"
 	"gopkg.in/mgo.v2/bson"
 )
 
@@ -38,9 +38,7 @@ type Service struct {
 	AsyncReadings bool
 	initAttempts  int
 	initialized   bool
-	locked        bool
 	stopped       bool
-	r             *mux.Router
 	scca          ScheduleCacheInterface
 	cw            *Watchers
 	proto         ProtocolDriver
@@ -86,18 +84,14 @@ func (s *Service) Start(svcInfo *common.ServiceInfo) (err error) {
 	}
 
 	// Setup REST API
-	s.r = mux.NewRouter().PathPrefix(common.APIPrefix).Subrouter()
-	initStatus()
-	initCommand()
-	initControl()
-	initUpdate()
+	r := controller.InitRestRoutes()
 
 	http.TimeoutHandler(nil, time.Millisecond*time.Duration(s.svcInfo.Timeout), "Request timed out")
 
 	// TODO: call ListenAndServe in a goroutine
 
 	common.LogCli.Info(fmt.Sprintf("*Service Start() called, name=%s, version=%s", s.name, common.ServiceVersion))
-	common.LogCli.Error(http.ListenAndServe(common.Colon+strconv.Itoa(s.svcInfo.Port), s.r).Error())
+	common.LogCli.Error(http.ListenAndServe(common.Colon+strconv.Itoa(s.svcInfo.Port), r).Error())
 	common.LogCli.Debug("*Service Start() exit")
 
 	return err

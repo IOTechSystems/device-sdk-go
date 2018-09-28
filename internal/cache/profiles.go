@@ -10,6 +10,7 @@ package cache
 import (
 	"fmt"
 	"github.com/edgexfoundry/edgex-go/pkg/models"
+	"strings"
 	"sync"
 )
 
@@ -24,7 +25,9 @@ type ProfileCache interface {
 	Add(profile models.DeviceProfile) error
 	Update(profile models.DeviceProfile) error
 	Remove(name string) error
-	DeviceObject(profileName string, objectName string) models.DeviceObject
+	DeviceObject(profileName string, objectName string) (models.DeviceObject, bool)
+	CommandExists(prfName string, cmd string) (bool, error)
+	ResourceOperations(prfName string, cmd string, method string) ([]models.ResourceOperation, error)
 }
 
 type profileCache struct {
@@ -113,8 +116,58 @@ func (p *profileCache) Remove(name string) error {
 	return nil
 }
 
-func (p *profileCache) DeviceObject(profileName string, objectName string) models.DeviceObject {
-	return p.doMap[profileName][objectName]
+func (p *profileCache) DeviceObject(profileName string, objectName string) (models.DeviceObject, bool) {
+	objs, ok := p.doMap[profileName]
+	if !ok {
+		return models.DeviceObject{}, ok
+	}
+
+	obj, ok := objs[objectName]
+	return obj, ok
+}
+
+// CommandExists returns a bool indicating whether the specified command exists for the
+// specified (by name) device. If the specified device doesn't exist, an error is returned.
+func (p *profileCache) CommandExists(prfName string, cmd string) (bool, error) {
+	commands, ok := p.cmdMap[prfName]
+	if !ok {
+		err := fmt.Errorf("profiles: CommandExists: specified profile: %s not found", prfName)
+		return false, err
+	}
+
+	if _, ok := commands[cmd]; !ok {
+		return false, nil
+	}
+
+	return true, nil
+}
+
+// GetResourceOperation...
+func (p *profileCache) ResourceOperations(prfName string, cmd string, method string) ([]models.ResourceOperation, error) {
+	var resOps []models.ResourceOperation
+	if strings.ToLower(method) == "get" {
+		prs, ok := p.getOpMap[prfName]
+		if !ok {
+			return nil, fmt.Errorf("profiles: ResourceOperations: specified profile: %s not found", prfName)
+		}
+
+		resOps, ok = prs[cmd]
+		if !ok {
+			return nil, fmt.Errorf("profiles: ResourceOperations: specified cmd: %s not found", cmd)
+		}
+	} else {
+		prs, ok := p.setOpMap[prfName]
+		if !ok {
+			return nil, fmt.Errorf("profiles: ResourceOperations: specified profile: %s not found", prfName)
+		}
+
+		resOps, ok = prs[cmd]
+		if !ok {
+			return nil, fmt.Errorf("profiles: ResourceOperations: specified cmd: %s not found", cmd)
+		}
+	}
+
+	return resOps, nil
 }
 
 func newProfileCache(profiles []models.DeviceProfile) ProfileCache {

@@ -1,14 +1,16 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
 //
 // Copyright (C) 2017-2018 Canonical Ltd
+// Copyright (C) 2018 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
-package device
+package handler
 
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/edgexfoundry/device-sdk-go/internal/cache"
 	"github.com/edgexfoundry/device-sdk-go/internal/common"
 	"io"
 	"net/http"
@@ -16,7 +18,7 @@ import (
 	"github.com/edgexfoundry/edgex-go/pkg/models"
 )
 
-func callbackHandler(w http.ResponseWriter, req *http.Request) {
+func CallbackHandler(w http.ResponseWriter, req *http.Request) {
 	defer req.Body.Close()
 	dec := json.NewDecoder(req.Body)
 	cbAlert := models.CallbackAlert{}
@@ -38,7 +40,14 @@ func callbackHandler(w http.ResponseWriter, req *http.Request) {
 	// function to be supported for Dehli is handling changes to a device's
 	// adminState (LOCKED or UNLOCKED).
 	if (cbAlert.ActionType == models.DEVICE) && (req.Method == http.MethodPut) {
-		err = dc.UpdateAdminState(cbAlert.Id)
+		dev, err := common.DevCli.Device(cbAlert.Id)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			common.LogCli.Error(fmt.Sprintf("cannot find the Device %s from Core Metadata: %v", cbAlert.Id, err))
+			return
+		}
+
+		err = cache.Devices().UpdateAdminState(cbAlert.Id, dev.AdminState)
 		if err == nil {
 			common.LogCli.Info(fmt.Sprintf("Updated device %s admin state", cbAlert.Id))
 		} else {
@@ -53,8 +62,4 @@ func callbackHandler(w http.ResponseWriter, req *http.Request) {
 	}
 
 	io.WriteString(w, "OK")
-}
-
-func initUpdate() {
-	svc.r.HandleFunc("/callback", callbackHandler)
 }

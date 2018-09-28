@@ -4,17 +4,13 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-package device
+package handler
 
 import (
 	"io"
 	"net/http"
 )
 
-func statusHandler(w http.ResponseWriter, req *http.Request) {
+func StatusHandler(w http.ResponseWriter, req *http.Request) {
 	io.WriteString(w, "pong")
-}
-
-func initStatus() {
-	svc.r.HandleFunc("/ping", statusHandler)
 }

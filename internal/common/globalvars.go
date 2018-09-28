@@ -17,6 +17,8 @@ var (
 	CurrentConfig        *Config
 	CurrentDeviceService models.DeviceService
 	UseRegistry          bool
+	ServiceLocked        bool
+	Proto                ProtocolDriver  // only for temporary
 	EvtCli               coredata.EventClient
 	AddrCli              metadata.AddressableClient
 	DevCli               metadata.DeviceClient

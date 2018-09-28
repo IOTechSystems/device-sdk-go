@@ -173,3 +173,12 @@ func (c ClientInfo) Url() string {
 	url := fmt.Sprintf("%s://%s:%v", c.Protocol, c.Host, c.Port)
 	return url
 }
+
+type CommandRequest struct {
+	// RO is a ResourceOperation
+	RO models.ResourceOperation
+	// DeviceObject (aka device resource) represents the device resource
+	// to be read or set. It can be used to access the attributes map,
+	// PropertyValue, and PropertyUnit structs.
+	DeviceObject models.DeviceObject
+}

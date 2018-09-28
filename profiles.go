@@ -200,19 +200,19 @@ func (p *profileCache) GetResourceOperations(devName string, cmd string, method 
 
 	devOps, ok := p.commands[devName]
 	if !ok {
-		err = fmt.Errorf("profiles: GetResourceOperations: specified dev: %s not found", devName)
+		err = fmt.Errorf("profiles: ResourceOperations: specified dev: %s not found", devName)
 		return nil, err
 	}
 
 	cmdOps, ok := devOps[strings.ToLower(cmd)]
 	if !ok {
-		err = fmt.Errorf("profiles: GetResourceOperations: specified cmd: %s not found", cmd)
+		err = fmt.Errorf("profiles: ResourceOperations: specified cmd: %s not found", cmd)
 		return nil, err
 	}
 
 	resOps, ok := cmdOps[strings.ToLower(method)]
 	if !ok {
-		err = fmt.Errorf("profiles: GetResourceOperations: specified cmd method: %s not found", method)
+		err = fmt.Errorf("profiles: ResourceOperations: specified cmd method: %s not found", method)
 		return nil, err
 	}
 

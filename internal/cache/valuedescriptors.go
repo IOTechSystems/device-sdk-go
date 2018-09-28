@@ -74,7 +74,7 @@ func (v *valueDescriptorCache) Remove(name string) error {
 
 func newValueDescriptorCache(descriptors []models.ValueDescriptor) ValueDescriptorCache {
 	vdcOnce.Do(func() {
-		vdMap := make(map[string]models.ValueDescriptor)
+		vdMap := make(map[string]models.ValueDescriptor, len(descriptors))
 		for _, vd := range descriptors {
 			vdMap[vd.Name] = vd
 		}

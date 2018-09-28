@@ -1,14 +1,16 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
 //
 // Copyright (C) 2017-2018 Canonical Ltd
+// Copyright (C) 2018 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
-package device
+package handler
 
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/edgexfoundry/device-sdk-go/internal/cache"
 	"github.com/edgexfoundry/device-sdk-go/internal/common"
 	"io"
 	"io/ioutil"
@@ -20,23 +22,23 @@ import (
 
 // Note, every HTTP request to ServeHTTP is made in a separate goroutine, which
 // means care needs to be taken with respect to shared data accessed through *Server.
-func commandFunc(w http.ResponseWriter, r *http.Request) {
+func CommandHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id := vars["id"]
 	cmd := vars["command"]
 
-	if svc.locked {
-		msg := fmt.Sprintf("%s is locked; %s %s", svc.name, r.Method, r.URL)
+	if common.ServiceLocked {
+		msg := fmt.Sprintf("%s is locked; %s %s", common.ServiceName, r.Method, r.URL)
 		common.LogCli.Error(msg)
 		http.Error(w, msg, http.StatusLocked) // status=423
 		return
 	}
 
 	// TODO - models.Device isn't thread safe currently
-	d := dc.DeviceById(id)
-	if d == nil {
+	d, ok := cache.Devices().ForId(id)
+	if !ok {
 		// TODO: standardize error message format (use of prefix)
-		msg := fmt.Sprintf("dev: %s not found; %s %s", id, r.Method, r.URL)
+		msg := fmt.Sprintf("Device: %s not found; %s %s", id, r.Method, r.URL)
 		common.LogCli.Error(msg)
 		http.Error(w, msg, http.StatusNotFound) // status=404
 		return
@@ -54,7 +56,7 @@ func commandFunc(w http.ResponseWriter, r *http.Request) {
 	// NOTE: as currently implemented, CommandExists checks the existence of a deviceprofile
 	// *resource* name, not a *command* name! A deviceprofile's command section is only used
 	// to trigger valuedescriptor creation.
-	exists, err := pc.CommandExists(d.Name, cmd)
+	exists, err := cache.Profiles().CommandExists(d.Profile.Name, cmd)
 
 	// TODO: once cache locking has been implemented, this should never happen
 	if err != nil {
@@ -85,16 +87,16 @@ func commandFunc(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	executeCommand(w, d, cmd, r.Method, string(body))
+	executeCommand(w, &d, cmd, r.Method, string(body))
 }
 
-func commandAllFunc(w http.ResponseWriter, r *http.Request) {
+func CommandAllFunc(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
 	common.LogCli.Debug(fmt.Sprintf("cmd: dev: all cmd: %s", vars["command"]))
 
-	if svc.locked {
-		msg := fmt.Sprintf("%s is locked; %s %s", svc.name, r.Method, r.URL)
+	if common.ServiceLocked {
+		msg := fmt.Sprintf("%s is locked; %s %s", common.ServiceName, r.Method, r.URL)
 		common.LogCli.Error(msg)
 		http.Error(w, msg, http.StatusLocked) // status=423
 		return
@@ -122,7 +124,7 @@ func executeCommand(w http.ResponseWriter, d *models.Device, cmd string, method 
 	readings := make([]models.Reading, 0, common.CurrentConfig.Device.MaxCmdOps)
 
 	// make ResourceOperations
-	ops, err := pc.GetResourceOperations(d.Name, cmd, method)
+	ops, err := cache.Profiles().ResourceOperations(d.Profile.Name, cmd, method)
 	if err != nil {
 		common.LogCli.Error(err.Error())
 		http.Error(w, err.Error(), http.StatusNotFound) // status=404
@@ -137,15 +139,7 @@ func executeCommand(w http.ResponseWriter, d *models.Device, cmd string, method 
 		return
 	}
 
-	devObjs := pc.getDeviceObjects(d.Name)
-	if devObjs == nil {
-		msg := fmt.Sprintf("internal error; no devObjs for dev: %s; %s %s", d.Name, cmd, method)
-		common.LogCli.Error(msg)
-		http.Error(w, msg, http.StatusInternalServerError) // status=500
-		return
-	}
-
-	reqs := make([]CommandRequest, len(ops))
+	reqs := make([]common.CommandRequest, len(ops))
 
 	for i, op := range ops {
 		objName := op.Object
@@ -155,7 +149,7 @@ func executeCommand(w http.ResponseWriter, d *models.Device, cmd string, method 
 		// deviceprofile resource command operation references another resource command
 		// instead of a device resource (see BoschXDK for reference).
 
-		devObj, ok := devObjs[objName]
+		devObj, ok := cache.Profiles().DeviceObject(d.Profile.Name, objName)
 
 		common.LogCli.Debug(fmt.Sprintf("deviceObject: %v", devObj))
 		if !ok {
@@ -224,12 +218,4 @@ func executeCommand(w http.ResponseWriter, d *models.Device, cmd string, method 
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(event)
-}
-
-func initCommand() {
-	common.LogCli.Debug("initCommand called")
-
-	sr := svc.r.PathPrefix("/device").Subrouter()
-	sr.HandleFunc("/{id}/{command}", commandFunc).Methods(http.MethodGet, http.MethodPut)
-	sr.HandleFunc("/all/{command}", commandAllFunc).Methods(http.MethodGet, http.MethodPut)
 }
