@@ -7,6 +7,8 @@ Labels = []
 OpenMsg = "device simple started"
 ReadMaxLimit = 256
 Timeout = 5000
+Name = "device-simple"
+Version = "0.1"
 
 [Registry]
 Host = "localhost"

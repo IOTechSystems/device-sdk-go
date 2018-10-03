@@ -8,20 +8,14 @@ package handler
 
 import (
 	"fmt"
-	"io"
-	"net/http"
-	"os"
-
-	"github.com/gorilla/mux"
+	"github.com/edgexfoundry/device-sdk-go/internal/common"
 )
 
-func DiscoveryHandler(w http.ResponseWriter, req *http.Request) {
-	fmt.Fprintf(os.Stdout, "service: discovery request")
-	io.WriteString(w, "OK")
+func DiscoveryHandler(requestMap map[string]string) {
+	common.LogCli.Info(fmt.Sprintf("service: discovery request"))
 }
 
-func TransformHandler(w http.ResponseWriter, req *http.Request) {
-	vars := mux.Vars(req)
-	fmt.Fprintf(os.Stdout, "service: transform request: transformData: %s", vars["transformData"])
-	io.WriteString(w, "OK")
+func TransformHandler(requestMap map[string]string) (map[string]string, common.AppError) {
+	common.LogCli.Info(fmt.Sprintf("service: transform request: transformData: %s", vars["transformData"]))
+	return requestMap, nil
 }

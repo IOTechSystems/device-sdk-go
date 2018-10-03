@@ -8,9 +8,6 @@
 package common
 
 const (
-	ServiceName    = "device-simple"
-	ServiceVersion = "0.1"
-
 	ClientData     = "Data"
 	ClientMetadata = "Metadata"
 	ClientLogging  = "Logging"
@@ -19,6 +16,7 @@ const (
 	Colon      = ":"
 	HttpScheme = "http://"
 	HttpProto  = "HTTP"
+	StatusResponse = "pong"
 
 	APIAddressableRoute     = APIPrefix + "/addressable"
 	APICallbackRoute        = APIPrefix + "/callback"

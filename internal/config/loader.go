@@ -78,6 +78,9 @@ func LoadConfig(useRegistry bool, profile string, confDir string) (config *commo
 		return nil, fmt.Errorf("unable to parse configuration file (%s): %v", path, err.Error())
 	}
 
+	common.ServiceName = config.Service.Name
+	common.ServiceVersion = config.Service.Version
+
 	var consulMsg string
 	if useRegistry {
 		consulMsg = "Register in consul..."

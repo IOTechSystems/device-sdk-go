@@ -14,6 +14,8 @@ import (
 )
 
 var (
+	ServiceName          string
+	ServiceVersion       string
 	CurrentConfig        *Config
 	CurrentDeviceService models.DeviceService
 	UseRegistry          bool

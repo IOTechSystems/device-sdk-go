@@ -8,7 +8,7 @@
 // service.  This interace provides an asbstraction layer for the device
 // or protocol specific logic of a device service.
 //
-package device
+package model
 
 import (
 	logger "github.com/edgexfoundry/edgex-go/pkg/clients/logging"

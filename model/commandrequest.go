@@ -4,7 +4,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-package device
+package model
 
 import "github.com/edgexfoundry/edgex-go/pkg/models"
 

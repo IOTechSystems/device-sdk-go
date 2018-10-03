@@ -38,6 +38,8 @@ type ServiceInfo struct {
 	// Timeout specifies a timeout (in milliseconds) for
 	// processing REST calls from other services.
 	Timeout int
+	Name string
+	Version string
 }
 
 type RegisteredService struct {

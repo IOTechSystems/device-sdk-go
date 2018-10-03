@@ -8,58 +8,45 @@
 package handler
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/edgexfoundry/device-sdk-go/internal/cache"
 	"github.com/edgexfoundry/device-sdk-go/internal/common"
-	"io"
 	"net/http"
 
 	"github.com/edgexfoundry/edgex-go/pkg/models"
 )
 
-func CallbackHandler(w http.ResponseWriter, req *http.Request) {
-	defer req.Body.Close()
-	dec := json.NewDecoder(req.Body)
-	cbAlert := models.CallbackAlert{}
-
-	err := dec.Decode(&cbAlert)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		common.LogCli.Error(fmt.Sprintf("Invalid callback request: %v", err))
-		return
-	}
-
+func CallbackHandler(cbAlert models.CallbackAlert, method string) common.AppError {
 	if (cbAlert.Id == "") || (cbAlert.ActionType == "") {
-		http.Error(w, "Missing parameters", http.StatusBadRequest)
+		appErr := common.NewBadRequestError("Missing parameters", nil)
 		common.LogCli.Error(fmt.Sprintf("Missing callback parameters"))
-		return
+		return appErr
 	}
 
 	// It was decided at the last F2F, that the one Core Metadata callback
 	// function to be supported for Dehli is handling changes to a device's
 	// adminState (LOCKED or UNLOCKED).
-	if (cbAlert.ActionType == models.DEVICE) && (req.Method == http.MethodPut) {
+	if (cbAlert.ActionType == models.DEVICE) && (method == http.MethodPut) {
 		dev, err := common.DevCli.Device(cbAlert.Id)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
+			appErr := common.NewBadRequestError(err.Error(), err)
 			common.LogCli.Error(fmt.Sprintf("cannot find the Device %s from Core Metadata: %v", cbAlert.Id, err))
-			return
+			return appErr
 		}
 
 		err = cache.Devices().UpdateAdminState(cbAlert.Id, dev.AdminState)
 		if err == nil {
 			common.LogCli.Info(fmt.Sprintf("Updated device %s admin state", cbAlert.Id))
 		} else {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			appErr := common.NewServerError(err.Error(), err)
 			common.LogCli.Error(fmt.Sprintf("Couldn't update device %s admin state: %v", cbAlert.Id, err.Error()))
-			return
+			return appErr
 		}
 	} else {
 		common.LogCli.Error(fmt.Sprintf("Invalid device method and/or action type: %s - %s", req.Method, cbAlert.ActionType))
-		http.Error(w, "Invalid device method and/or action type", http.StatusBadRequest)
-		return
+		appErr := common.NewBadRequestError("Invalid device method and/or action type", nil)
+		return appErr
 	}
 
-	io.WriteString(w, "OK")
+	return nil
 }

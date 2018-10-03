@@ -16,6 +16,7 @@ import (
 	"github.com/edgexfoundry/device-sdk-go/internal/clientinit"
 	"github.com/edgexfoundry/device-sdk-go/internal/controller"
 	"github.com/edgexfoundry/device-sdk-go/internal/provision"
+	"github.com/edgexfoundry/device-sdk-go/model"
 	"github.com/edgexfoundry/edgex-go/pkg/clients/types"
 	"net/http"
 	"strconv"
@@ -32,17 +33,32 @@ var (
 
 // A Service listens for requests and routes them to the right command
 type Service struct {
-	name          string
 	svcInfo       *common.ServiceInfo
-	Discovery     ProtocolDiscovery
-	AsyncReadings bool
+	discovery     model.ProtocolDiscovery
+	asyncReadings bool
 	initAttempts  int
 	initialized   bool
 	stopped       bool
 	scca          ScheduleCacheInterface
 	cw            *Watchers
-	proto         ProtocolDriver
-	asyncCh       <-chan *CommandResult
+	proto         model.ProtocolDriver
+	asyncCh       <-chan *model.CommandResult
+}
+
+func (s *Service) Name() string {
+	return common.ServiceName
+}
+
+func (s *Service) Version() string {
+	return common.ServiceVersion
+}
+
+func (s *Service) Discovery() model.ProtocolDiscovery {
+	return s.discovery
+}
+
+func (s *Service) AsyncReadings() bool {
+	return s.asyncReadings
 }
 
 // Start the device service.
@@ -70,9 +86,9 @@ func (s *Service) Start(svcInfo *common.ServiceInfo) (err error) {
 	s.scca = getScheduleCache(common.CurrentConfig)
 
 	// initialize driver
-	if s.AsyncReadings {
+	if s.asyncReadings {
 		// TODO: make channel buffer size a setting
-		s.asyncCh = make(<-chan *CommandResult, 16)
+		s.asyncCh = make(<-chan *model.CommandResult, 16)
 
 		go processAsyncResults()
 	}
@@ -90,7 +106,7 @@ func (s *Service) Start(svcInfo *common.ServiceInfo) (err error) {
 
 	// TODO: call ListenAndServe in a goroutine
 
-	common.LogCli.Info(fmt.Sprintf("*Service Start() called, name=%s, version=%s", s.name, common.ServiceVersion))
+	common.LogCli.Info(fmt.Sprintf("*Service Start() called, name=%s, version=%s", common.ServiceName, common.ServiceVersion))
 	common.LogCli.Error(http.ListenAndServe(common.Colon+strconv.Itoa(s.svcInfo.Port), r).Error())
 	common.LogCli.Debug("*Service Start() exit")
 
@@ -98,9 +114,9 @@ func (s *Service) Start(svcInfo *common.ServiceInfo) (err error) {
 }
 
 func selfRegister() error {
-	common.LogCli.Debug("Trying to find Device Service: " + svc.name)
+	common.LogCli.Debug("Trying to find Device Service: " + common.ServiceName)
 
-	ds, err := common.DevSvcCli.DeviceServiceForName(svc.name)
+	ds, err := common.DevSvcCli.DeviceServiceForName(common.ServiceName)
 
 	if err != nil {
 		if errsc, ok := err.(*types.ErrServiceClient); ok && errsc.StatusCode == 404 {
@@ -129,7 +145,7 @@ func createNewDeviceService() (models.DeviceService, error) {
 	millis := time.Now().UnixNano() / int64(time.Millisecond)
 	ds := models.DeviceService{
 		Service: models.Service{
-			Name:           svc.name,
+			Name:           common.ServiceName,
 			Labels:         svc.svcInfo.Labels,
 			OperatingState: "ENABLED",
 			Addressable:    *addr,
@@ -140,7 +156,7 @@ func createNewDeviceService() (models.DeviceService, error) {
 
 	id, err := common.DevSvcCli.Add(&ds)
 	if err != nil {
-		common.LogCli.Error(fmt.Sprintf("Add Deviceservice: %s; failed: %v", svc.name, err))
+		common.LogCli.Error(fmt.Sprintf("Add Deviceservice: %s; failed: %v", common.ServiceName, err))
 		return models.DeviceService{}, err
 	}
 	if len(id) != 24 || !bson.IsObjectIdHex(id) {
@@ -158,16 +174,16 @@ func createNewDeviceService() (models.DeviceService, error) {
 
 func makeNewAddressable() (*models.Addressable, error) {
 	// check whether there has been an existing addressable
-	addr, err := common.AddrCli.AddressableForName(svc.name)
+	addr, err := common.AddrCli.AddressableForName(common.ServiceName)
 	if err != nil {
 		if errsc, ok := err.(*types.ErrServiceClient); ok && errsc.StatusCode == 404 {
-			common.LogCli.Info(fmt.Sprintf("Addressable %s doesn't exist, creating a new one", svc.name))
+			common.LogCli.Info(fmt.Sprintf("Addressable %s doesn't exist, creating a new one", common.ServiceName))
 			millis := time.Now().UnixNano() / int64(time.Millisecond)
 			addr = models.Addressable{
 				BaseObject: models.BaseObject{
 					Origin: millis,
 				},
-				Name:       svc.name,
+				Name:       common.ServiceName,
 				HTTPMethod: http.MethodPost,
 				Protocol:   common.HttpProto,
 				Address:    svc.svcInfo.Host,
@@ -190,7 +206,7 @@ func makeNewAddressable() (*models.Addressable, error) {
 			return nil, err
 		}
 	} else {
-		common.LogCli.Info(fmt.Sprintf("Addressable %s exists", svc.name))
+		common.LogCli.Info(fmt.Sprintf("Addressable %s exists", common.ServiceName))
 	}
 
 	return &addr, nil
@@ -213,7 +229,7 @@ func (s *Service) AddDevice(dev models.Device) error {
 // name, version and ProtocolDriver, which cannot be nil.
 // Note - this function is a singleton, if called more than once,
 // it will alwayd return an error.
-func NewService(proto ProtocolDriver) (*Service, error) {
+func NewService(proto model.ProtocolDriver) (*Service, error) {
 
 	if svc != nil {
 		err := fmt.Errorf("NewService: service already exists!\n")
@@ -230,7 +246,7 @@ func NewService(proto ProtocolDriver) (*Service, error) {
 		return nil, err
 	}
 
-	svc = &Service{name: common.ServiceName, proto: proto}
+	svc = &Service{proto: proto}
 
 	return svc, nil
 }
