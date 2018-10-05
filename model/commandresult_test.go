@@ -1,6 +1,7 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
 //
 // Copyright (C) 2018 Canonical Ltd
+// Copyright (C) 2018 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -27,6 +28,12 @@ func TestNewBoolResult(t *testing.T) {
 		t.Errorf("NewBoolResult: invalid result: true")
 	}
 
+	reading := cr.Reading("FakeDevice", "FakeDeviceObject")
+	fmt.Printf("bool reading: %v\n", reading)
+	if reading.Value != "false" {
+		t.Errorf("NewBoolResult: invalid reading Value: %s", reading.Value)
+	}
+
 	result = true
 
 	cr = NewBoolResult(nil, nil, 0, result)
@@ -39,8 +46,11 @@ func TestNewBoolResult(t *testing.T) {
 		t.Errorf("NewBoolResult: invalid result: false")
 	}
 
-	reading := cr.Reading("FakeDevice", "FakeDeviceObject")
+	reading = cr.Reading("FakeDevice", "FakeDeviceObject")
 	fmt.Printf("bool reading: %v\n", reading)
+	if reading.Value != "true" {
+		t.Errorf("NewBoolResult: invalid reading Value: %s", reading.Value)
+	}
 }
 
 // Test NewStringResult function.

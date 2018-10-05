@@ -41,7 +41,6 @@ type Service struct {
 	stopped       bool
 	scca          ScheduleCacheInterface
 	cw            *Watchers
-	proto         model.ProtocolDriver
 	asyncCh       <-chan *model.CommandResult
 }
 
@@ -95,7 +94,7 @@ func (s *Service) Start(svcInfo *common.ServiceInfo) (err error) {
 
 	err = s.proto.Initialize(s, common.LogCli, s.asyncCh)
 	if err != nil {
-		common.LogCli.Error(fmt.Sprintf("ProtocolDriver.Initialize failure: %v; exiting.", err))
+		common.LogCli.Error(fmt.Sprintf("Driver.Initialize failure: %v; exiting.", err))
 		return err
 	}
 
@@ -216,7 +215,7 @@ func makeNewAddressable() (*models.Addressable, error) {
 func (s *Service) Stop(force bool) error {
 
 	s.stopped = true
-	s.proto.Stop(force)
+	common.Driver.Stop(force)
 	return nil
 }
 
@@ -226,7 +225,7 @@ func (s *Service) AddDevice(dev models.Device) error {
 }
 
 // NewService create a new device service instance with the given
-// name, version and ProtocolDriver, which cannot be nil.
+// name, version and Driver, which cannot be nil.
 // Note - this function is a singleton, if called more than once,
 // it will alwayd return an error.
 func NewService(proto model.ProtocolDriver) (*Service, error) {
@@ -242,11 +241,12 @@ func NewService(proto model.ProtocolDriver) (*Service, error) {
 	}
 
 	if proto == nil {
-		err := fmt.Errorf("NewService: no ProtocolDriver specified\n")
+		err := fmt.Errorf("NewService: no Driver specified\n")
 		return nil, err
 	}
 
-	svc = &Service{proto: proto}
+	svc = &Service{}
+	common.Driver = proto
 
 	return svc, nil
 }

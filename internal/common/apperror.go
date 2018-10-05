@@ -37,3 +37,7 @@ func NewServerError(msg string, err error) AppError {
 func NewBadRequestError(msg string, err error) AppError {
 	return appError{err: err, msg: msg, code: http.StatusBadRequest}
 }
+
+func NewLockedError(msg string, err error) AppError {
+	return appError{err: err, msg: msg, code: http.StatusLocked}
+}

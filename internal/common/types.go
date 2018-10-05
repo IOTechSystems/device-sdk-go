@@ -73,11 +73,11 @@ type DeviceInfo struct {
 	// InitCmdArgs specify arguments to be used when building the InitCmd.
 	InitCmdArgs string
 	// MaxCmdOps defines the maximum number of resource operations that
-	// can be sent to a ProtocolDriver in a single command.
+	// can be sent to a Driver in a single command.
 	MaxCmdOps int
 	// MaxCmdValueLen is the maximum string length of a command parameter or
 	// result (including the valuedescriptor name) that can be returned
-	// by a ProtocolDriver.
+	// by a Driver.
 	MaxCmdValueLen int
 	// InitCmd specifies a device resource command which is automatically
 	// generated whenever a new device is removed from the DS.
@@ -174,13 +174,4 @@ type ClientInfo struct {
 func (c ClientInfo) Url() string {
 	url := fmt.Sprintf("%s://%s:%v", c.Protocol, c.Host, c.Port)
 	return url
-}
-
-type CommandRequest struct {
-	// RO is a ResourceOperation
-	RO models.ResourceOperation
-	// DeviceObject (aka device resource) represents the device resource
-	// to be read or set. It can be used to access the attributes map,
-	// PropertyValue, and PropertyUnit structs.
-	DeviceObject models.DeviceObject
 }

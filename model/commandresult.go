@@ -1,6 +1,7 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
 //
 // Copyright (C) 2018 Canonical Ltd
+// Copyright (C) 2018 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -10,6 +11,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
+	"io"
 	"time"
 
 	"github.com/edgexfoundry/edgex-go/pkg/models"
@@ -84,16 +86,11 @@ type CommandResult struct {
 	NumericResult []byte
 	// StringResult is a string value returned as a result by a ProtocolDriver instance.
 	StringResult string
-	// BoolResult is a bool value returned as a result by a ProtocolDriver instance.
-	BoolResult bool
 }
 
 func NewBoolResult(ro *models.ResourceOperation, vdr *models.ValueDescriptor, origin int64, value bool) (cr *CommandResult) {
-
-	// TODO: modify CommandResult to just store bool in NumericValue too...
-
-	cr = &CommandResult{RO: ro, VDR: vdr, Origin: origin, Type: Bool, BoolResult: value}
-
+	cr = &CommandResult{RO: ro, VDR: vdr, Origin: origin, Type: Bool}
+	encodeResult(cr, value)
 	fmt.Printf("result: %v\n", cr)
 	return
 }
@@ -105,139 +102,93 @@ func NewStringResult(ro *models.ResourceOperation, vdr *models.ValueDescriptor, 
 	return
 }
 
-// TODO: re-factor to get rid of duplicate code
-
 // NewUint8Result creates a CommandResult of Type Uint8 with the given value.
 func NewUint8Result(ro *models.ResourceOperation, vdr *models.ValueDescriptor, origin int64, value uint8) (cr *CommandResult) {
-	buf := new(bytes.Buffer)
 	cr = &CommandResult{RO: ro, VDR: vdr, Origin: origin, Type: Uint8}
-	err := binary.Write(buf, binary.BigEndian, value)
-	if err != nil {
-		fmt.Printf("binary.Write failed: %v\n", err)
-	}
-
-	cr.NumericResult = buf.Bytes()
+	encodeResult(cr, value)
 	return
 }
 
 // NewUint16Result creates a CommandResult of Type Uint16 with the given value.
 func NewUint16Result(ro *models.ResourceOperation, vdr *models.ValueDescriptor, origin int64, value uint16) (cr *CommandResult) {
-	buf := new(bytes.Buffer)
 	cr = &CommandResult{RO: ro, VDR: vdr, Origin: origin, Type: Uint16}
-	err := binary.Write(buf, binary.BigEndian, value)
-	if err != nil {
-		fmt.Printf("binary.Write failed: %v\n", err)
-	}
-
-	cr.NumericResult = buf.Bytes()
+	encodeResult(cr, value)
 	return
 }
 
 // NewUint32Result creates a CommandResult of Type Uint32 with the given value.
 func NewUint32Result(ro *models.ResourceOperation, vdr *models.ValueDescriptor, origin int64, value uint32) (cr *CommandResult) {
-	buf := new(bytes.Buffer)
 	cr = &CommandResult{RO: ro, VDR: vdr, Origin: origin, Type: Uint32}
-	err := binary.Write(buf, binary.BigEndian, value)
-	if err != nil {
-		fmt.Printf("binary.Write failed: %v\n", err)
-	}
-
-	cr.NumericResult = buf.Bytes()
+	encodeResult(cr, value)
 	return
 }
 
 // NewUint64Result creates a CommandResult of Type Uint64 with the given value.
 func NewUint64Result(ro *models.ResourceOperation, vdr *models.ValueDescriptor, origin int64, value uint64) (cr *CommandResult) {
-	buf := new(bytes.Buffer)
 	cr = &CommandResult{RO: ro, VDR: vdr, Origin: origin, Type: Uint64}
-	err := binary.Write(buf, binary.BigEndian, value)
-	if err != nil {
-		fmt.Printf("binary.Write failed: %v\n", err)
-	}
-
-	cr.NumericResult = buf.Bytes()
+	encodeResult(cr, value)
 	return
 }
 
 // NewInt8Result creates a CommandResult of Type Int8 with the given value.
 func NewInt8Result(ro *models.ResourceOperation, vdr *models.ValueDescriptor, origin int64, value int8) (cr *CommandResult) {
-	buf := new(bytes.Buffer)
 	cr = &CommandResult{RO: ro, VDR: vdr, Origin: origin, Type: Int8}
-	err := binary.Write(buf, binary.BigEndian, value)
-	if err != nil {
-		fmt.Printf("binary.Write failed: %v\n", err)
-	}
-
-	cr.NumericResult = buf.Bytes()
+	encodeResult(cr, value)
 	return
 }
 
 // NewInt16Result creates a CommandResult of Type Int16 with the given value.
 func NewInt16Result(ro *models.ResourceOperation, vdr *models.ValueDescriptor, origin int64, value int16) (cr *CommandResult) {
-	buf := new(bytes.Buffer)
 	cr = &CommandResult{RO: ro, VDR: vdr, Origin: origin, Type: Int16}
-	err := binary.Write(buf, binary.BigEndian, value)
-	if err != nil {
-		fmt.Printf("binary.Write failed: %v\n", err)
-	}
-
-	cr.NumericResult = buf.Bytes()
+	encodeResult(cr, value)
 	return
 }
 
 // NewInt32Result creates a CommandResult of Type Int32 with the given value.
 func NewInt32Result(ro *models.ResourceOperation, vdr *models.ValueDescriptor, origin int64, value int32) (cr *CommandResult) {
-	buf := new(bytes.Buffer)
 	cr = &CommandResult{RO: ro, VDR: vdr, Origin: origin, Type: Int32}
-	err := binary.Write(buf, binary.BigEndian, value)
-	if err != nil {
-		fmt.Printf("binary.Write failed: %v\n", err)
-	}
-
-	cr.NumericResult = buf.Bytes()
+	encodeResult(cr, value)
 	return
 }
 
 // NewInt64Result creates a CommandResult of Type Int64 with the given value.
 func NewInt64Result(ro *models.ResourceOperation, vdr *models.ValueDescriptor, origin int64, value int64) (cr *CommandResult) {
-	buf := new(bytes.Buffer)
 	cr = &CommandResult{RO: ro, VDR: vdr, Origin: origin, Type: Int64}
-	err := binary.Write(buf, binary.BigEndian, value)
-	if err != nil {
-		fmt.Printf("binary.Write failed: %v\n", err)
-	}
-
-	cr.NumericResult = buf.Bytes()
+	encodeResult(cr, value)
 	return
 }
 
 // NewFloat32Result creates a CommandResult of Type Float32 with the given value.
 func NewFloat32Result(ro *models.ResourceOperation, vdr *models.ValueDescriptor, origin int64, value float32) (cr *CommandResult) {
-	buf := new(bytes.Buffer)
 	cr = &CommandResult{RO: ro, VDR: vdr, Origin: origin, Type: Float32}
-	err := binary.Write(buf, binary.BigEndian, value)
-	if err != nil {
-		fmt.Printf("binary.Write failed: %v\n", err)
-	}
-
-	cr.NumericResult = buf.Bytes()
+	encodeResult(cr, value)
 	return
 }
 
 // NewFloat64Result creates a CommandResult of Type Float64 with the given value.
 func NewFloat64Result(ro *models.ResourceOperation, vdr *models.ValueDescriptor, origin int64, value float64) (cr *CommandResult) {
-	buf := new(bytes.Buffer)
 	cr = &CommandResult{RO: ro, VDR: vdr, Origin: origin, Type: Float64}
-	err := binary.Write(buf, binary.BigEndian, value)
-	if err != nil {
-		fmt.Printf("binary.Write failed: %v\n", err)
-	}
-
-	cr.NumericResult = buf.Bytes()
+	encodeResult(cr, value)
 	return
 }
 
-// TODO: add Get funcs for all basic types
+func encodeResult(cr *CommandResult, value interface{}) {
+	buf := new(bytes.Buffer)
+	err := binary.Write(buf, binary.BigEndian, value)
+	if err != nil {
+		fmt.Printf("binary.Write failed: %v", err)
+	}
+
+	cr.NumericResult = buf.Bytes()
+}
+
+func decodeResult(reader io.Reader, value interface{}) error {
+	err := binary.Read(reader, binary.BigEndian, value)
+	if err != nil {
+		fmt.Printf("binary.Read failed: %v", err)
+	}
+	return err
+}
 
 // Transform applies any transform attributes contained in the
 // CommandResult's ValueDescriptor to the result. If the transform
@@ -257,8 +208,7 @@ func (cr *CommandResult) Reading(devName string, doName string) *models.Reading 
 	if cr.Origin > 0 {
 		reading.Origin = cr.Origin
 	} else {
-		t := time.Now()
-		reading.Origin = t.Unix()
+		reading.Origin = time.Now().UnixNano() / int64(time.Millisecond)
 	}
 
 	return reading
@@ -266,28 +216,28 @@ func (cr *CommandResult) Reading(devName string, doName string) *models.Reading 
 
 // String returns a string representation of a CommandResult instance.
 func (cr *CommandResult) toString() (str string) {
-	if cr.Type == Bool {
-
-		if cr.BoolResult == true {
-			str = "true"
-		} else {
-			str = "false"
-		}
-
-		return
-	}
-
 	if cr.Type == String {
 		str = cr.StringResult
 		return
 	}
 
-	buf := bytes.NewReader(cr.NumericResult)
+	reader := bytes.NewReader(cr.NumericResult)
 
 	switch cr.Type {
+	case Bool:
+		var res bool
+		err := binary.Read(reader, binary.BigEndian, &res)
+		if err != nil {
+			str = err.Error()
+		}
+		if res {
+			str = "true"
+		} else {
+			str = "false"
+		}
 	case Uint8:
 		var res uint8
-		err := binary.Read(buf, binary.BigEndian, &res)
+		err := binary.Read(reader, binary.BigEndian, &res)
 		if err != nil {
 			str = err.Error()
 		}
@@ -295,7 +245,7 @@ func (cr *CommandResult) toString() (str string) {
 		str = fmt.Sprintf("%d", res)
 	case Uint16:
 		var res uint16
-		err := binary.Read(buf, binary.BigEndian, &res)
+		err := binary.Read(reader, binary.BigEndian, &res)
 		if err != nil {
 			str = err.Error()
 		}
@@ -303,7 +253,7 @@ func (cr *CommandResult) toString() (str string) {
 		str = fmt.Sprintf("%d", res)
 	case Uint32:
 		var res uint32
-		err := binary.Read(buf, binary.BigEndian, &res)
+		err := binary.Read(reader, binary.BigEndian, &res)
 		if err != nil {
 			str = err.Error()
 		}
@@ -311,7 +261,7 @@ func (cr *CommandResult) toString() (str string) {
 		str = fmt.Sprintf("%d", res)
 	case Uint64:
 		var res uint64
-		err := binary.Read(buf, binary.BigEndian, &res)
+		err := binary.Read(reader, binary.BigEndian, &res)
 		if err != nil {
 			str = err.Error()
 		}
@@ -319,7 +269,7 @@ func (cr *CommandResult) toString() (str string) {
 		str = fmt.Sprintf("%d", res)
 	case Int8:
 		var res int8
-		err := binary.Read(buf, binary.BigEndian, &res)
+		err := binary.Read(reader, binary.BigEndian, &res)
 		if err != nil {
 			str = err.Error()
 		}
@@ -327,7 +277,7 @@ func (cr *CommandResult) toString() (str string) {
 		str = fmt.Sprintf("%d", res)
 	case Int16:
 		var res int16
-		err := binary.Read(buf, binary.BigEndian, &res)
+		err := binary.Read(reader, binary.BigEndian, &res)
 		if err != nil {
 			str = err.Error()
 		}
@@ -335,7 +285,7 @@ func (cr *CommandResult) toString() (str string) {
 		str = fmt.Sprintf("%d", res)
 	case Int32:
 		var res int32
-		err := binary.Read(buf, binary.BigEndian, &res)
+		err := binary.Read(reader, binary.BigEndian, &res)
 		if err != nil {
 			str = err.Error()
 		}
@@ -343,20 +293,22 @@ func (cr *CommandResult) toString() (str string) {
 		str = fmt.Sprintf("%d", res)
 	case Int64:
 		var res int64
-		err := binary.Read(buf, binary.BigEndian, &res)
+		err := binary.Read(reader, binary.BigEndian, &res)
 		if err != nil {
 			str = err.Error()
 		}
 
 		str = fmt.Sprintf("%d", res)
 
-	// TODO: implement base64 encoding of float results
+		// TODO: implement base64 encoding of float results
 	case Float32:
 		var res float32
-		str = fmt.Sprintf("%f", binary.Read(buf, binary.BigEndian, &res))
+		binary.Read(reader, binary.BigEndian, &res)
+		str = fmt.Sprintf("%f", res)
 	case Float64:
 		var res float64
-		str = fmt.Sprintf("%f", binary.Read(buf, binary.BigEndian, &res))
+		binary.Read(reader, binary.BigEndian, &res)
+		str = fmt.Sprintf("%f", res)
 	}
 
 	return
@@ -411,4 +363,102 @@ func (cr *CommandResult) TransformResult(models.PropertyValue) bool {
 
 	// TODO: implement base, scale, offset & assertions
 	return true
+}
+
+func (cr *CommandResult) boolValue() (bool, error) {
+	var result bool
+	if cr.Type != Bool {
+		return result, fmt.Errorf("the data type is not %T", result)
+	}
+	err := decodeResult(bytes.NewReader(cr.NumericResult), &result)
+	return result, err
+}
+
+func (cr *CommandResult) stringValue() (string, error) {
+	result := cr.StringResult
+	if cr.Type != String {
+		return result, fmt.Errorf("the data type is not %T", result)
+	}
+	return result, nil
+}
+
+func (cr *CommandResult) Uint8Value() (uint8, error) {
+	var result uint8
+	if cr.Type != Uint8 {
+		return result, fmt.Errorf("the data type is not %T", result)
+	}
+	err := decodeResult(bytes.NewReader(cr.NumericResult), &result)
+	return result, err
+}
+
+func (cr *CommandResult) Uint16Value() (uint16, error) {
+	var result uint16
+	if cr.Type != Uint16 {
+		return result, fmt.Errorf("the data type is not %T", result)
+	}
+	err := decodeResult(bytes.NewReader(cr.NumericResult), &result)
+	return result, err
+}
+
+func (cr *CommandResult) Uint32Value() (uint32, error) {
+	var result uint32
+	if cr.Type != Uint32 {
+		return result, fmt.Errorf("the data type is not %T", result)
+	}
+	err := decodeResult(bytes.NewReader(cr.NumericResult), &result)
+	return result, err
+}
+
+func (cr *CommandResult) Int8Value() (int8, error) {
+	var result int8
+	if cr.Type != Int8 {
+		return result, fmt.Errorf("the data type is not %T", result)
+	}
+	err := decodeResult(bytes.NewReader(cr.NumericResult), &result)
+	return result, err
+}
+
+func (cr *CommandResult) Int16Value() (int16, error) {
+	var result int16
+	if cr.Type != Int16 {
+		return result, fmt.Errorf("the data type is not %T", result)
+	}
+	err := decodeResult(bytes.NewReader(cr.NumericResult), &result)
+	return result, err
+}
+
+func (cr *CommandResult) Int32Value() (int32, error) {
+	var result int32
+	if cr.Type != Int32 {
+		return result, fmt.Errorf("the data type is not %T", result)
+	}
+	err := decodeResult(bytes.NewReader(cr.NumericResult), &result)
+	return result, err
+}
+
+func (cr *CommandResult) Int64Value() (int64, error) {
+	var result int64
+	if cr.Type != Int64 {
+		return result, fmt.Errorf("the data type is not %T", result)
+	}
+	err := decodeResult(bytes.NewReader(cr.NumericResult), &result)
+	return result, err
+}
+
+func (cr *CommandResult) Float32Value() (float32, error) {
+	var result float32
+	if cr.Type != Float32 {
+		return result, fmt.Errorf("the data type is not %T", result)
+	}
+	err := decodeResult(bytes.NewReader(cr.NumericResult), &result)
+	return result, err
+}
+
+func (cr *CommandResult) Float64Value() (float64, error) {
+	var result float64
+	if cr.Type != Float64 {
+		return result, fmt.Errorf("the data type is not %T", result)
+	}
+	err := decodeResult(bytes.NewReader(cr.NumericResult), &result)
+	return result, err
 }

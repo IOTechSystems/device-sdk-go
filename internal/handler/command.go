@@ -8,13 +8,14 @@
 package handler
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/edgexfoundry/device-sdk-go/internal/cache"
 	"github.com/edgexfoundry/device-sdk-go/internal/common"
+	"github.com/edgexfoundry/device-sdk-go/model"
 	"io"
-	"io/ioutil"
 	"net/http"
+	"strings"
+	"time"
 
 	"github.com/edgexfoundry/edgex-go/pkg/models"
 	"github.com/gorilla/mux"
@@ -22,33 +23,29 @@ import (
 
 // Note, every HTTP request to ServeHTTP is made in a separate goroutine, which
 // means care needs to be taken with respect to shared data accessed through *Server.
-func CommandHandler(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
+func CommandHandler(vars map[string]string, body string, method string) (*models.Event, common.AppError) {
 	id := vars["id"]
 	cmd := vars["command"]
 
 	if common.ServiceLocked {
-		msg := fmt.Sprintf("%s is locked; %s %s", common.ServiceName, r.Method, r.URL)
+		msg := fmt.Sprintf("%s is locked; %s", common.ServiceName, method)
 		common.LogCli.Error(msg)
-		http.Error(w, msg, http.StatusLocked) // status=423
-		return
+		return nil, common.NewLockedError(msg, nil)
 	}
 
 	// TODO - models.Device isn't thread safe currently
 	d, ok := cache.Devices().ForId(id)
 	if !ok {
 		// TODO: standardize error message format (use of prefix)
-		msg := fmt.Sprintf("Device: %s not found; %s %s", id, r.Method, r.URL)
+		msg := fmt.Sprintf("Device: %s not found; %s", id, method)
 		common.LogCli.Error(msg)
-		http.Error(w, msg, http.StatusNotFound) // status=404
-		return
+		return nil, common.NewNotFoundError(msg, nil)
 	}
 
 	if d.AdminState == "LOCKED" {
-		msg := fmt.Sprintf("%s is locked; %s %s", id, r.Method, r.URL)
+		msg := fmt.Sprintf("%s is locked; %s", d.Name, method)
 		common.LogCli.Error(msg)
-		http.Error(w, msg, http.StatusLocked) // status=423
-		return
+		return nil, common.NewLockedError(msg, nil)
 	}
 
 	// TODO: need to mark device when operation in progress, so it can't be removed till completed
@@ -60,34 +57,124 @@ func CommandHandler(w http.ResponseWriter, r *http.Request) {
 
 	// TODO: once cache locking has been implemented, this should never happen
 	if err != nil {
-		msg := fmt.Sprintf("internal error; dev: %s not found in cache; %s %s", id, r.Method, r.URL)
+		msg := fmt.Sprintf("internal error; Device: %s searching %s in cache failed; %s", d.Name, cmd, method)
 		common.LogCli.Error(msg)
-		http.Error(w, msg, http.StatusInternalServerError) // status=500
-		return
+		return nil, common.NewServerError(msg, err)
 	}
 
 	if !exists {
-		msg := fmt.Sprintf("%s for dev: %s not found; %s %s", cmd, id, r.Method, r.URL)
+		msg := fmt.Sprintf("%s for Device: %s not found; %s", cmd, d.Name, method)
 		common.LogCli.Error(msg)
-		http.Error(w, msg, http.StatusNotFound) // status=404
-		return
+		return nil, common.NewNotFoundError(msg, nil)
 	}
 
-	defer r.Body.Close()
-	body, err := ioutil.ReadAll(r.Body)
+	if strings.ToLower(method) == "get" {
+		return execGetCmd(&d, cmd)
+	} else {
+		appErr := execPutCmd(&d, cmd)
+		return nil, appErr
+	}
+}
+
+func execGetCmd(device *models.Device, cmd string) (*models.Event, common.AppError) {
+	readings := make([]models.Reading, 0, common.CurrentConfig.Device.MaxCmdOps)
+
+	// make ResourceOperations
+	ops, err := cache.Profiles().ResourceOperations(device.Profile.Name, cmd, "get")
 	if err != nil {
-		msg := fmt.Sprintf("commandFunc: error reading request body for: %s %s", r.Method, r.URL)
-		common.LogCli.Error(msg)
+		common.LogCli.Error(err.Error())
+		return nil, common.NewNotFoundError(err.Error(), err)
 	}
 
-	if len(body) == 0 && r.Method == http.MethodPut {
-		msg := fmt.Sprintf("no request body provided; %s %s", r.Method, r.URL)
+	if len(ops) > common.CurrentConfig.Device.MaxCmdOps {
+		msg := fmt.Sprintf("MaxCmdOps (%d) execeeded for dev: %s cmd: %s method: GET",
+			common.CurrentConfig.Device.MaxCmdOps, device.Name, cmd)
 		common.LogCli.Error(msg)
-		http.Error(w, msg, http.StatusBadRequest) // status=400
-		return
+		return nil, common.NewServerError(msg, nil)
 	}
 
-	executeCommand(w, &d, cmd, r.Method, string(body))
+	reqs := make([]model.CommandRequest, len(ops))
+
+	for i, op := range ops {
+		objName := op.Object
+		common.LogCli.Debug(fmt.Sprintf("deviceObject: %s", objName))
+
+		// TODO: add recursive support for resource command chaining. This occurs when a
+		// deviceprofile resource command operation references another resource command
+		// instead of a device resource (see BoschXDK for reference).
+
+		devObj, ok := cache.Profiles().DeviceObject(device.Profile.Name, objName)
+		common.LogCli.Debug(fmt.Sprintf("deviceObject: %v", devObj))
+		if !ok {
+			msg := fmt.Sprintf("no devobject: %s for dev: %s cmd: %s method: GET", objName, device.Name, cmd)
+			common.LogCli.Error(msg)
+			return nil, common.NewServerError(msg, nil)
+		}
+
+		reqs[i].RO = op
+		reqs[i].DeviceObject = devObj
+	}
+
+	results, err := common.Driver.HandleGetCommands(device.Addressable, reqs)
+	if err != nil {
+		msg := fmt.Sprintf("HandleGetCommands error for Device: %s cmd: %s, %v", device.Name, cmd, err)
+		return nil, common.NewServerError(msg, err)
+	}
+
+	var transformsOK bool = true
+
+	for _, cr := range results {
+		// get the device resource associated with the rsp.RO
+		do, ok := cache.Profiles().DeviceObject(device.Profile.Name, cr.RO.Object)
+		if !ok {
+			msg := fmt.Sprintf("no devobject: %s for dev: %s in Command Result %v", cr.RO.Object, device.Name, cr)
+			common.LogCli.Error(msg)
+			return nil, common.NewServerError(msg, nil)
+		}
+
+		ok = cr.TransformResult(do.Properties.Value)
+		if !ok {
+			transformsOK = false
+		}
+
+		// TODO: handle Mappings (part of RO)
+
+		// TODO: the Java SDK supports a RO secondary device resource(object).
+		// If defined, then a RO result will generate a reading for the
+		// secondary object. As this use case isn't defined and/or used in
+		// any of the existing Java device services, this concept hasn't
+		// been implemened in gxds. TBD at the devices f2f whether this
+		// be killed completely.
+
+		reading := cr.Reading(device.Name, do.Name)
+		readings = append(readings, *reading)
+
+		common.LogCli.Debug(fmt.Sprintf("dev: %s RO: %v reading: %v", device.Name, cr.RO, reading))
+	}
+
+	// push to Core Data
+	event := &models.Event{Device: device.Name, Readings: readings}
+	event.Origin = time.Now().UnixNano() / int64(time.Millisecond)
+	go sendEvent(event)
+
+	// TODO: the 'all' form of the endpoint returns 200 if a transform
+	// overflow or assertion trips...
+	if !transformsOK {
+		msg := fmt.Sprintf("Transform failed for dev: %s cmd: %s method: GET", device.Name, cmd)
+		common.LogCli.Error(msg)
+		common.LogCli.Debug(fmt.Sprintf("Event: %v", event))
+		return event, common.NewServerError(msg, nil)
+	}
+
+	// TODO: enforce config.MaxCmdValueLen; need to include overhead for
+	// the rest of the Reading JSON + Event JSON length?  Should there be
+	// a separate JSON body max limit for retvals & command parameters?
+
+	return event, nil
+}
+
+func execPutCmd(device *models.Device, cmd string) common.AppError {
+	return nil
 }
 
 func CommandAllFunc(w http.ResponseWriter, r *http.Request) {
@@ -120,102 +207,9 @@ func CommandAllFunc(w http.ResponseWriter, r *http.Request) {
 	//      - formats reading(s) into an event, sends to core-data, return result
 }
 
-func executeCommand(w http.ResponseWriter, d *models.Device, cmd string, method string, args string) {
-	readings := make([]models.Reading, 0, common.CurrentConfig.Device.MaxCmdOps)
-
-	// make ResourceOperations
-	ops, err := cache.Profiles().ResourceOperations(d.Profile.Name, cmd, method)
+func sendEvent(event *models.Event) {
+	_, err := common.EvtCli.Add(event)
 	if err != nil {
-		common.LogCli.Error(err.Error())
-		http.Error(w, err.Error(), http.StatusNotFound) // status=404
-		return
+		common.LogCli.Error(fmt.Sprintf("Failed to push event for device %s: %s", event.Device, err))
 	}
-
-	if len(ops) > common.CurrentConfig.Device.MaxCmdOps {
-		msg := fmt.Sprintf("MaxCmdOps (%d) execeeded for dev: %s cmd: %s method: %s",
-			common.CurrentConfig.Device.MaxCmdOps, d.Name, cmd, method)
-		common.LogCli.Error(msg)
-		http.Error(w, msg, http.StatusInternalServerError) // status=500
-		return
-	}
-
-	reqs := make([]common.CommandRequest, len(ops))
-
-	for i, op := range ops {
-		objName := op.Object
-		common.LogCli.Debug(fmt.Sprintf("deviceObject: %s", objName))
-
-		// TODO: add recursive support for resource command chaining. This occurs when a
-		// deviceprofile resource command operation references another resource command
-		// instead of a device resource (see BoschXDK for reference).
-
-		devObj, ok := cache.Profiles().DeviceObject(d.Profile.Name, objName)
-
-		common.LogCli.Debug(fmt.Sprintf("deviceObject: %v", devObj))
-		if !ok {
-			msg := fmt.Sprintf("no devobject: %s for dev: %s cmd: %s method: %s", objName, d.Name, cmd, method)
-			http.Error(w, msg, http.StatusInternalServerError) // status=500
-			return
-		}
-
-		reqs[i].RO = op
-		reqs[i].DeviceObject = devObj
-	}
-
-	results, err := svc.proto.HandleCommands(*d, reqs, args)
-	if err != nil {
-		msg := fmt.Sprintf("HandleCommands error for dev: %s cmd: %s method: %s", d.Name, cmd, method)
-		http.Error(w, msg, http.StatusInternalServerError) // status=500
-		return
-	}
-
-	var transformsOK bool = true
-
-	for _, cr := range results {
-		// get the device resource associated with the rsp.RO
-		do := pc.getDeviceObject(d, cr.RO)
-
-		ok := cr.TransformResult(do.Properties.Value)
-		if !ok {
-			transformsOK = false
-		}
-
-		// TODO: handle Mappings (part of RO)
-
-		// TODO: the Java SDK supports a RO secondary device resource(object).
-		// If defined, then a RO result will generate a reading for the
-		// secondary object. As this use case isn't defined and/or used in
-		// any of the existing Java device services, this concept hasn't
-		// been implemened in gxds. TBD at the devices f2f whether this
-		// be killed completely.
-
-		reading := cr.Reading(d.Name, do.Name)
-		readings = append(readings, *reading)
-
-		common.LogCli.Debug(fmt.Sprintf("dev: %s RO: %v reading: %v", d.Name, cr.RO, reading))
-	}
-
-	// push to Core Data
-	event := &models.Event{Device: d.Name, Readings: readings}
-	_, err = common.EvtCli.Add(event)
-	if err != nil {
-		msg := fmt.Sprintf("internal error; failed to push event for dev: %s cmd: %s to CoreData: %s", d.Name, cmd, err)
-		common.LogCli.Error(msg)
-		http.Error(w, msg, http.StatusInternalServerError) // status=500
-		return
-	}
-
-	// TODO: the 'all' form of the endpoint returns 200 if a transform
-	// overflow or assertion trips...
-	if !transformsOK {
-		msg := fmt.Sprintf("Transform failed for dev: %s cmd: %s method: %s", d.Name, cmd, method)
-		http.Error(w, msg, http.StatusInternalServerError) // status=500
-	}
-
-	// TODO: enforce config.MaxCmdValueLen; need to include overhead for
-	// the rest of the Reading JSON + Event JSON length?  Should there be
-	// a separate JSON body max limit for retvals & command parameters?
-
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(event)
 }

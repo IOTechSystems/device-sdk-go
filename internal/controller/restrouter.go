@@ -9,7 +9,6 @@ package controller
 
 import (
 	"github.com/edgexfoundry/device-sdk-go/internal/common"
-	"github.com/edgexfoundry/device-sdk-go/internal/handler"
 	"github.com/gorilla/mux"
 	"net/http"
 )
@@ -22,8 +21,8 @@ func InitRestRoutes() *mux.Router {
 
 	common.LogCli.Debug("init command rest controller")
 	sr := r.PathPrefix("/device").Subrouter()
-	sr.HandleFunc("/{id}/{command}", handler.CommandHandler).Methods(http.MethodGet, http.MethodPut)
-	sr.HandleFunc("/all/{command}", handler.CommandAllFunc).Methods(http.MethodGet, http.MethodPut)
+	sr.HandleFunc("/{id}/{command}", commandFunc).Methods(http.MethodGet, http.MethodPut)
+	sr.HandleFunc("/all/{command}", commandAllFunc).Methods(http.MethodGet, http.MethodPut)
 
 	common.LogCli.Debug("init callback rest controller")
 	r.HandleFunc("/callback", callbackFunc)

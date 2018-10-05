@@ -7,6 +7,7 @@
 package common
 
 import (
+	"github.com/edgexfoundry/device-sdk-go/model"
 	"github.com/edgexfoundry/edgex-go/pkg/clients/coredata"
 	"github.com/edgexfoundry/edgex-go/pkg/clients/logging"
 	"github.com/edgexfoundry/edgex-go/pkg/clients/metadata"
@@ -20,7 +21,7 @@ var (
 	CurrentDeviceService models.DeviceService
 	UseRegistry          bool
 	ServiceLocked        bool
-	Proto                ProtocolDriver  // only for temporary
+	Driver               model.ProtocolDriver
 	EvtCli               coredata.EventClient
 	AddrCli              metadata.AddressableClient
 	DevCli               metadata.DeviceClient

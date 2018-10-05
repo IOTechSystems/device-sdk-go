@@ -11,6 +11,7 @@ package driver
 
 import (
 	"fmt"
+	"github.com/edgexfoundry/device-sdk-go/model"
 
 	device "github.com/edgexfoundry/device-sdk-go"
 	logger "github.com/edgexfoundry/edgex-go/pkg/clients/logging"
@@ -31,7 +32,7 @@ func (s *SimpleDriver) DisconnectDevice(address *models.Addressable) error {
 // service.  If the DS supports asynchronous data pushed from devices/sensors,
 // then a valid receive' channel must be created and returned, otherwise nil
 // is returned.
-func (s *SimpleDriver) Initialize(svc *device.Service, lc logger.LoggingClient, asyncCh <-chan *device.CommandResult) error {
+func (s *SimpleDriver) Initialize(svc *device.Service, lc logger.LoggingClient, asyncCh <-chan *model.CommandResult) error {
 	s.lc = lc
 	s.lc.Debug(fmt.Sprintf("SimpleHandler.Initialize called!"))
 	return nil
@@ -39,24 +40,36 @@ func (s *SimpleDriver) Initialize(svc *device.Service, lc logger.LoggingClient, 
 
 // HandleCommand triggers an asynchronous protocol specific GET or SET operation
 // for the specified device.
-func (s *SimpleDriver) HandleCommands(d models.Device, reqs []device.CommandRequest,
-	params string) (res []device.CommandResult, err error) {
+func (s *SimpleDriver) HandleGetCommands(addr models.Addressable, reqs []model.CommandRequest) (res []model.CommandResult, err error) {
 
 	if len(reqs) != 1 {
 		err = fmt.Errorf("SimpleDriver.HandleCommands; too many command requests; only one supported")
 		return
 	}
 
-	s.lc.Debug(fmt.Sprintf("HandleCommand: dev: %s op: %v attrs: %v", d.Name, reqs[0].RO.Operation, reqs[0].DeviceObject.Attributes))
+	s.lc.Debug(fmt.Sprintf("HandleCommand: dev: %s op: %v attrs: %v", addr.Name, reqs[0].RO.Operation, reqs[0].DeviceObject.Attributes))
 
-	res = make([]device.CommandResult, 1)
+	res = make([]model.CommandResult, 1)
 
 	// TODO: change CommandResult to get rid of pointer to RO
 	res[0].RO = &reqs[0].RO
-	res[0].Type = device.Bool
+	res[0].Type = model.Bool
 	res[0].BoolResult = true
 
 	return
+}
+
+func (s *SimpleDriver) HandlePutCommands(addr models.Addressable, reqs []model.CommandRequest,
+	params map[string]string) error {
+
+	if len(reqs) != 1 {
+		err := fmt.Errorf("SimpleDriver.HandleCommands; too many command requests; only one supported")
+		return err
+	}
+
+	s.lc.Debug(fmt.Sprintf("HandleCommand: dev: %s op: %v attrs: %v", addr.Name, reqs[0].RO.Operation, reqs[0].DeviceObject.Attributes))
+
+	return nil
 }
 
 // Stop the protocol-specific DS code to shutdown gracefully, or
