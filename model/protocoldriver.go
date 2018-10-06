@@ -11,7 +11,7 @@
 package model
 
 import (
-	logger "github.com/edgexfoundry/edgex-go/pkg/clients/logging"
+	"github.com/edgexfoundry/edgex-go/pkg/clients/logging"
 	"github.com/edgexfoundry/edgex-go/pkg/models"
 )
 
@@ -46,7 +46,7 @@ type ProtocolDriver interface {
 	// TODO: add param to CommandRequest and have command endpoint parse the params.
 	HandleGetCommands(addr models.Addressable, reqs []CommandRequest) ([]CommandValue, error)
 
-	HandlePutCommands(addr models.Addressable, reqs []CommandRequest, params map[string]string) error
+	HandlePutCommands(addr models.Addressable, reqs []CommandRequest, params map[string]CommandValue) error
 
 	// Stop instructs the protocol-specific DS code to shutdown gracefully, or
 	// if the force parameter is 'true', immediately. The driver is responsible

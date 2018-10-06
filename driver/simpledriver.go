@@ -60,7 +60,7 @@ func (s *SimpleDriver) HandleGetCommands(addr models.Addressable, reqs []model.C
 }
 
 func (s *SimpleDriver) HandlePutCommands(addr models.Addressable, reqs []model.CommandRequest,
-	params map[string]string) error {
+	params map[string]model.CommandValue) error {
 
 	if len(reqs) != 1 {
 		err := fmt.Errorf("SimpleDriver.HandleCommands; too many command requests; only one supported")
