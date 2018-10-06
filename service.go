@@ -41,7 +41,7 @@ type Service struct {
 	stopped       bool
 	scca          ScheduleCacheInterface
 	cw            *Watchers
-	asyncCh       <-chan *model.CommandResult
+	asyncCh       <-chan *model.CommandValue
 }
 
 func (s *Service) Name() string {
@@ -87,7 +87,7 @@ func (s *Service) Start(svcInfo *common.ServiceInfo) (err error) {
 	// initialize driver
 	if s.asyncReadings {
 		// TODO: make channel buffer size a setting
-		s.asyncCh = make(<-chan *model.CommandResult, 16)
+		s.asyncCh = make(<-chan *model.CommandValue, 16)
 
 		go processAsyncResults()
 	}

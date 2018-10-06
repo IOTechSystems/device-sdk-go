@@ -33,9 +33,9 @@ type ProtocolDriver interface {
 	DisconnectDevice(address *models.Addressable) error
 
 	// Initialize performs protocol-specific initialization for the device
-	// service. The given *CommandResult channel can be used to push asynchronous
+	// service. The given *CommandValue channel can be used to push asynchronous
 	// events and readings to Core Data.
-	Initialize(s *Service, lc logger.LoggingClient, asyncCh <-chan *CommandResult) error
+	Initialize(s *Service, lc logger.LoggingClient, asyncCh <-chan *CommandValue) error
 
 	// HandleCommands passes a slice of CommandRequest structs each representing
 	// a ResourceOperation for a specific device resource (aka DeviceObject).
@@ -44,7 +44,7 @@ type ProtocolDriver interface {
 	// commands.
 	//
 	// TODO: add param to CommandRequest and have command endpoint parse the params.
-	HandleGetCommands(addr models.Addressable, reqs []CommandRequest) ([]CommandResult, error)
+	HandleGetCommands(addr models.Addressable, reqs []CommandRequest) ([]CommandValue, error)
 
 	HandlePutCommands(addr models.Addressable, reqs []CommandRequest, params map[string]string) error
 
