@@ -46,7 +46,7 @@ type ProtocolDriver interface {
 	// TODO: add param to CommandRequest and have command endpoint parse the params.
 	HandleGetCommands(addr models.Addressable, reqs []CommandRequest) ([]CommandValue, error)
 
-	HandlePutCommands(addr models.Addressable, reqs []CommandRequest, params map[string]CommandValue) error
+	HandlePutCommands(addr models.Addressable, reqs []CommandRequest, params []CommandValue) error
 
 	// Stop instructs the protocol-specific DS code to shutdown gracefully, or
 	// if the force parameter is 'true', immediately. The driver is responsible

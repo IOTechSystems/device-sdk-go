@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"github.com/edgexfoundry/device-sdk-go/internal/cache"
 	"github.com/edgexfoundry/device-sdk-go/internal/common"
+	"github.com/edgexfoundry/device-sdk-go/internal/transformer"
 	"github.com/edgexfoundry/device-sdk-go/model"
 	"io"
 	"net/http"
@@ -71,7 +72,7 @@ func CommandHandler(vars map[string]string, body string, method string) (*models
 	if strings.ToLower(method) == "get" {
 		return execGetCmd(&d, cmd)
 	} else {
-		appErr := execPutCmd(&d, cmd)
+		appErr := execPutCmd(&d, cmd, body)
 		return nil, appErr
 	}
 }
@@ -123,21 +124,34 @@ func execGetCmd(device *models.Device, cmd string) (*models.Event, common.AppErr
 
 	var transformsOK bool = true
 
-	for _, cr := range results {
+	for _, cv := range results {
 		// get the device resource associated with the rsp.RO
-		do, ok := cache.Profiles().DeviceObject(device.Profile.Name, cr.RO.Object)
+		do, ok := cache.Profiles().DeviceObject(device.Profile.Name, cv.RO.Object)
 		if !ok {
-			msg := fmt.Sprintf("no devobject: %s for dev: %s in Command Result %v", cr.RO.Object, device.Name, cr)
+			msg := fmt.Sprintf("no devobject: %s for dev: %s in Command Result %v", cv.RO.Object, device.Name, cv)
 			common.LogCli.Error(msg)
 			return nil, common.NewServerError(msg, nil)
 		}
 
-		ok = cr.TransformResult(do.Properties.Value)
-		if !ok {
+		err = transformer.TransformGetResult(&cv, do.Properties.Value)
+		if err != nil {
+			common.LogCli.Error(fmt.Sprintf("CommandValue (%s) transformed failed: %v", cv.String(), err))
 			transformsOK = false
 		}
 
-		// TODO: handle Mappings (part of RO)
+		err = transformer.CheckAssertion(&cv, do.Properties.Value.Assertion, device)
+		if err != nil {
+			common.LogCli.Error(fmt.Sprintf("Assertion failed for device resource: %s, with value: %s", cv.String(), err))
+			transformsOK = false
+		}
+
+		mappings := cv.RO.Mappings
+		if mappings != nil && len(mappings) > 0 {
+			newCV, ok := transformer.MapCommandValue(&cv, mappings)
+			if ok {
+				cv = *newCV
+			}
+		}
 
 		// TODO: the Java SDK supports a RO secondary device resource(object).
 		// If defined, then a RO result will generate a reading for the
@@ -146,10 +160,10 @@ func execGetCmd(device *models.Device, cmd string) (*models.Event, common.AppErr
 		// been implemened in gxds. TBD at the devices f2f whether this
 		// be killed completely.
 
-		reading := cr.Reading(device.Name, do.Name)
+		reading := commandValueToReading(&cv, device.Name)
 		readings = append(readings, *reading)
 
-		common.LogCli.Debug(fmt.Sprintf("dev: %s RO: %v reading: %v", device.Name, cr.RO, reading))
+		common.LogCli.Debug(fmt.Sprintf("dev: %s RO: %v reading: %v", device.Name, cv.RO, reading))
 	}
 
 	// push to Core Data
@@ -167,13 +181,13 @@ func execGetCmd(device *models.Device, cmd string) (*models.Event, common.AppErr
 	}
 
 	// TODO: enforce config.MaxCmdValueLen; need to include overhead for
-	// the rest of the Reading JSON + Event JSON length?  Should there be
+	// the rest of the reading JSON + Event JSON length?  Should there be
 	// a separate JSON body max limit for retvals & command parameters?
 
 	return event, nil
 }
 
-func execPutCmd(device *models.Device, cmd string) common.AppError {
+func execPutCmd(device *models.Device, cmd string, params string) common.AppError {
 	return nil
 }
 
@@ -212,4 +226,18 @@ func sendEvent(event *models.Event) {
 	if err != nil {
 		common.LogCli.Error(fmt.Sprintf("Failed to push event for device %s: %s", event.Device, err))
 	}
+}
+
+func commandValueToReading(cv *model.CommandValue, devName string) *models.Reading {
+	reading := &models.Reading{Name: cv.RO.Parameter, Device: devName}
+	reading.Value = cv.ValueToString()
+
+	// if value has a non-zero Origin, use it
+	if cv.Origin > 0 {
+		reading.Origin = cv.Origin
+	} else {
+		reading.Origin = time.Now().UnixNano() / int64(time.Millisecond)
+	}
+
+	return reading
 }

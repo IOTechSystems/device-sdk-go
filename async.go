@@ -26,7 +26,7 @@ func processAsyncResults() {
 
 		_ = cr.TransformResult(do.Properties.Value)
 
-		reading := cr.Reading(cr.DeviceName, do.Name)
+		reading := cr.reading(cr.DeviceName, do.Name)
 		readings = append(readings, *reading)
 
 		// push to Core Data

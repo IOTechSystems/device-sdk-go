@@ -43,7 +43,7 @@ func CallbackHandler(cbAlert models.CallbackAlert, method string) common.AppErro
 			return appErr
 		}
 	} else {
-		common.LogCli.Error(fmt.Sprintf("Invalid device method and/or action type: %s - %s", req.Method, cbAlert.ActionType))
+		common.LogCli.Error(fmt.Sprintf("Invalid device method and/or action type: %s - %s", method, cbAlert.ActionType))
 		appErr := common.NewBadRequestError("Invalid device method and/or action type", nil)
 		return appErr
 	}

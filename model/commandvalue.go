@@ -11,203 +11,187 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
+	"github.com/edgexfoundry/device-sdk-go/internal/common"
+	"github.com/edgexfoundry/edgex-go/pkg/models"
 	"io"
 	"strconv"
-	"time"
-
-	"github.com/edgexfoundry/edgex-go/pkg/models"
 )
 
-// ValueType indicates the type of result being passed back
+// ValueType indicates the type of value being passed back
 // from a ProtocolDriver instance.
 type ValueType int
 
 const (
-	// Bool indicates that the result is a bool,
+	// Bool indicates that the value is a bool,
 	// stored in CommandValue's boolRes member.
 	Bool ValueType = iota
-	// String indicates that the result is a string,
+	// String indicates that the value is a string,
 	// stored in CommandValue's stringRes member.
 	String
-	// Uint8 indicates that the result is a uint8 that
+	// Uint8 indicates that the value is a uint8 that
 	// is stored in CommandValue's NumericRes member.
 	Uint8
-	// Uint16 indicates that the result is a uint16 that
+	// Uint16 indicates that the value is a uint16 that
 	// is stored in CommandValue's NumericRes member.
 	Uint16
-	// Uint32 indicates that the result is a uint32 that
+	// Uint32 indicates that the value is a uint32 that
 	// is stored in CommandValue's NumericRes member.
 	Uint32
-	// Uint64 indicates that the result is a uint64 that
+	// Uint64 indicates that the value is a uint64 that
 	// is stored in CommandValue's NumericRes member.
 	Uint64
-	// Int8 indicates that the result is a int8 that
+	// Int8 indicates that the value is a int8 that
 	// is stored in CommandValue's NumericRes member.
 	Int8
-	// Int16 indicates that the result is a int16 that
+	// Int16 indicates that the value is a int16 that
 	// is stored in CommandValue's NumericRes member.
 	Int16
-	// Int32 indicates that the result is a int32 that
+	// Int32 indicates that the value is a int32 that
 	// is stored in CommandValue's NumericRes member.
 	Int32
-	// Int64 indicates that the result is a int64 that
+	// Int64 indicates that the value is a int64 that
 	// is stored in CommandValue's NumericRes member.
 	Int64
-	// Float32 indicates that the result is a float32 that
+	// Float32 indicates that the value is a float32 that
 	// is stored in CommandValue's NumericRes member.
 	Float32
-	// Float64 indicates that the result is a float64 that
+	// Float64 indicates that the value is a float64 that
 	// is stored in CommandValue's NumericRes member.
 	Float64
 )
 
 type CommandValue struct {
+	// RO is a pointer to the ResourceOperation that triggered the
+	// CommandResult to be returned from the ProtocolDriver instance.
+	RO *models.ResourceOperation
 	// Origin is an int64 value which indicates the time the reading
 	// contained in the CommandValue was read by the ProtocolDriver
 	// instance.
 	Origin int64
 	// Type is a ValueType value which indicates what type of
-	// result was returned from the ProtocolDriver instance in
+	// value was returned from the ProtocolDriver instance in
 	// response to HandleCommand being called to handle a single
 	// ResourceOperation.
 	Type ValueType
 	// NumericValue is a byte slice with a maximum capacity of
-	// 64 bytes, used to hold a numeric result returned by a
+	// 64 bytes, used to hold a numeric value returned by a
 	// ProtocolDriver instance. The value can be converted to
 	// its native type by referring to the the value of ResType.
 	NumericValue []byte
-	// stringValue is a string value returned as a result by a ProtocolDriver instance.
+	// stringValue is a string value returned as a value by a ProtocolDriver instance.
 	stringValue string
 }
 
-func NewBoolValue(origin int64, value bool) (cr *CommandValue) {
-	cr = &CommandValue{Origin: origin, Type: Bool}
-	encodeResult(cr, value)
-	fmt.Printf("result: %v\n", cr)
+func NewBoolValue(ro *models.ResourceOperation, origin int64, value bool) (cv *CommandValue, err error) {
+	cv = &CommandValue{RO: ro, Origin: origin, Type: Bool}
+	err = encodeValue(cv, value)
 	return
 }
 
-func NewStringValue(origin int64, value string) (cr *CommandValue) {
-	cr = &CommandValue{Origin: origin, Type: String, stringValue: value}
-
-	fmt.Printf("result: %v\n", cr)
+func NewStringValue(ro *models.ResourceOperation, origin int64, value string) (cv *CommandValue) {
+	cv = &CommandValue{RO: ro, Origin: origin, Type: String, stringValue: value}
 	return
 }
 
 // NewUint8Value creates a CommandValue of Type Uint8 with the given value.
-func NewUint8Value(origin int64, value uint8) (cr *CommandValue) {
-	cr = &CommandValue{Origin: origin, Type: Uint8}
-	encodeResult(cr, value)
+func NewUint8Value(ro *models.ResourceOperation, origin int64, value uint8) (cv *CommandValue, err error) {
+	cv = &CommandValue{RO: ro, Origin: origin, Type: Uint8}
+	err = encodeValue(cv, value)
 	return
 }
 
 // NewUint16Value creates a CommandValue of Type Uint16 with the given value.
-func NewUint16Value(origin int64, value uint16) (cr *CommandValue) {
-	cr = &CommandValue{Origin: origin, Type: Uint16}
-	encodeResult(cr, value)
+func NewUint16Value(ro *models.ResourceOperation, origin int64, value uint16) (cv *CommandValue, err error) {
+	cv = &CommandValue{RO: ro, Origin: origin, Type: Uint16}
+	err = encodeValue(cv, value)
 	return
 }
 
 // NewUint32Value creates a CommandValue of Type Uint32 with the given value.
-func NewUint32Value(origin int64, value uint32) (cr *CommandValue) {
-	cr = &CommandValue{Origin: origin, Type: Uint32}
-	encodeResult(cr, value)
+func NewUint32Value(ro *models.ResourceOperation, origin int64, value uint32) (cv *CommandValue, err error) {
+	cv = &CommandValue{RO: ro, Origin: origin, Type: Uint32}
+	err = encodeValue(cv, value)
 	return
 }
 
 // NewUint64Value creates a CommandValue of Type Uint64 with the given value.
-func NewUint64Value(origin int64, value uint64) (cr *CommandValue) {
-	cr = &CommandValue{Origin: origin, Type: Uint64}
-	encodeResult(cr, value)
+func NewUint64Value(ro *models.ResourceOperation, origin int64, value uint64) (cv *CommandValue, err error) {
+	cv = &CommandValue{RO: ro, Origin: origin, Type: Uint64}
+	err = encodeValue(cv, value)
 	return
 }
 
 // NewInt8Value creates a CommandValue of Type Int8 with the given value.
-func NewInt8Value(origin int64, value int8) (cr *CommandValue) {
-	cr = &CommandValue{Origin: origin, Type: Int8}
-	encodeResult(cr, value)
+func NewInt8Value(ro *models.ResourceOperation, origin int64, value int8) (cv *CommandValue, err error) {
+	cv = &CommandValue{RO: ro, Origin: origin, Type: Int8}
+	err = encodeValue(cv, value)
 	return
 }
 
 // NewInt16Value creates a CommandValue of Type Int16 with the given value.
-func NewInt16Value(origin int64, value int16) (cr *CommandValue) {
-	cr = &CommandValue{Origin: origin, Type: Int16}
-	encodeResult(cr, value)
+func NewInt16Value(ro *models.ResourceOperation, origin int64, value int16) (cv *CommandValue, err error) {
+	cv = &CommandValue{RO: ro, Origin: origin, Type: Int16}
+	err = encodeValue(cv, value)
 	return
 }
 
 // NewInt32Value creates a CommandValue of Type Int32 with the given value.
-func NewInt32Value(origin int64, value int32) (cr *CommandValue) {
-	cr = &CommandValue{Origin: origin, Type: Int32}
-	encodeResult(cr, value)
+func NewInt32Value(ro *models.ResourceOperation, origin int64, value int32) (cv *CommandValue, err error) {
+	cv = &CommandValue{RO: ro, Origin: origin, Type: Int32}
+	err = encodeValue(cv, value)
 	return
 }
 
 // NewInt64Value creates a CommandValue of Type Int64 with the given value.
-func NewInt64Value(origin int64, value int64) (cr *CommandValue) {
-	cr = &CommandValue{Origin: origin, Type: Int64}
-	encodeResult(cr, value)
+func NewInt64Value(ro *models.ResourceOperation, origin int64, value int64) (cv *CommandValue, err error) {
+	cv = &CommandValue{RO: ro, Origin: origin, Type: Int64}
+	err = encodeValue(cv, value)
 	return
 }
 
 // NewFloat32Value creates a CommandValue of Type Float32 with the given value.
-func NewFloat32Value(origin int64, value float32) (cr *CommandValue) {
-	cr = &CommandValue{Origin: origin, Type: Float32}
-	encodeResult(cr, value)
+func NewFloat32Value(ro *models.ResourceOperation, origin int64, value float32) (cv *CommandValue, err error) {
+	cv = &CommandValue{RO: ro, Origin: origin, Type: Float32}
+	err = encodeValue(cv, value)
 	return
 }
 
 // NewFloat64Value creates a CommandValue of Type Float64 with the given value.
-func NewFloat64Value(origin int64, value float64) (cr *CommandValue) {
-	cr = &CommandValue{Origin: origin, Type: Float64}
-	encodeResult(cr, value)
+func NewFloat64Value(ro *models.ResourceOperation, origin int64, value float64) (cv *CommandValue, err error) {
+	cv = &CommandValue{RO: ro, Origin: origin, Type: Float64}
+	err = encodeValue(cv, value)
 	return
 }
 
-func encodeResult(cr *CommandValue, value interface{}) {
+func encodeValue(cv *CommandValue, value interface{}) error {
 	buf := new(bytes.Buffer)
 	err := binary.Write(buf, binary.BigEndian, value)
 	if err != nil {
-		fmt.Printf("binary.Write failed: %v", err)
-	}
-
-	cr.NumericValue = buf.Bytes()
-}
-
-func decodeResult(reader io.Reader, value interface{}) error {
-	err := binary.Read(reader, binary.BigEndian, value)
-	if err != nil {
-		fmt.Printf("binary.Read failed: %v", err)
+		common.LogCli.Error(fmt.Sprintf("binary.Write failed: %v", err))
+	} else {
+		cv.NumericValue = buf.Bytes()
 	}
 	return err
 }
 
-// Reading returns a new Reading instance created from the the given CommandValue.
-func (cr *CommandValue) Reading(devName string, vdName string) *models.Reading {
-
-	reading := &models.Reading{Name: vdName, Device: devName}
-	reading.Value = cr.toString()
-
-	// if result has a non-zero Origin, use it
-	if cr.Origin > 0 {
-		reading.Origin = cr.Origin
-	} else {
-		reading.Origin = time.Now().UnixNano() / int64(time.Millisecond)
+func decodeValue(reader io.Reader, value interface{}) error {
+	err := binary.Read(reader, binary.BigEndian, value)
+	if err != nil {
+		common.LogCli.Error(fmt.Sprintf("binary.Read failed: %v", err))
 	}
-
-	return reading
+	return err
 }
 
-// String returns a string representation of a CommandValue instance.
-func (cr *CommandValue) toString() (str string) {
-	if cr.Type == String {
-		str = cr.stringValue
+//ValueToString returns the string format of the value
+func (cv *CommandValue) ValueToString() (str string) {
+	if cv.Type == String {
+		str = cv.stringValue
 		return
 	}
 
-	reader := bytes.NewReader(cr.NumericValue)
+	reader := bytes.NewReader(cv.NumericValue)
 
-	switch cr.Type {
+	switch cv.Type {
 	case Bool:
 		var res bool
 		err := binary.Read(reader, binary.BigEndian, &res)
@@ -285,13 +269,13 @@ func (cr *CommandValue) toString() (str string) {
 }
 
 // String returns a string representation of a CommandValue instance.
-func (cr *CommandValue) String() (str string) {
+func (cv *CommandValue) String() (str string) {
 
-	originStr := fmt.Sprintf("%d\n", cr.Origin)
+	originStr := fmt.Sprintf("%d\n", cv.Origin)
 
 	var typeStr string
 
-	switch cr.Type {
+	switch cv.Type {
 	case Bool:
 		typeStr = "Bool: "
 	case String:
@@ -318,124 +302,116 @@ func (cr *CommandValue) String() (str string) {
 		typeStr = "Float64: "
 	}
 
-	resultStr := typeStr + cr.toString()
+	valueStr := typeStr + cv.ValueToString()
 
-	str = originStr + resultStr
+	str = originStr + valueStr
 
 	return
 }
 
-// TransformResult applies transforms specified in the given
-// PropertyValue instance.
-func (cr *CommandValue) TransformResult(models.PropertyValue) bool {
-
-	// TODO: implement base, scale, offset & assertions
-	return true
+func (cv *CommandValue) BoolValue() (bool, error) {
+	var value bool
+	if cv.Type != Bool {
+		return value, fmt.Errorf("the data type is not %T", value)
+	}
+	err := decodeValue(bytes.NewReader(cv.NumericValue), &value)
+	return value, err
 }
 
-func (cr *CommandValue) BoolValue() (bool, error) {
-	var result bool
-	if cr.Type != Bool {
-		return result, fmt.Errorf("the data type is not %T", result)
+func (cv *CommandValue) StringValue() (string, error) {
+	value := cv.stringValue
+	if cv.Type != String {
+		return value, fmt.Errorf("the data type is not %T", value)
 	}
-	err := decodeResult(bytes.NewReader(cr.NumericValue), &result)
-	return result, err
+	return value, nil
 }
 
-func (cr *CommandValue) StringValue() (string, error) {
-	result := cr.stringValue
-	if cr.Type != String {
-		return result, fmt.Errorf("the data type is not %T", result)
+func (cv *CommandValue) Uint8Value() (uint8, error) {
+	var value uint8
+	if cv.Type != Uint8 {
+		return value, fmt.Errorf("the data type is not %T", value)
 	}
-	return result, nil
+	err := decodeValue(bytes.NewReader(cv.NumericValue), &value)
+	return value, err
 }
 
-func (cr *CommandValue) Uint8Value() (uint8, error) {
-	var result uint8
-	if cr.Type != Uint8 {
-		return result, fmt.Errorf("the data type is not %T", result)
+func (cv *CommandValue) Uint16Value() (uint16, error) {
+	var value uint16
+	if cv.Type != Uint16 {
+		return value, fmt.Errorf("the data type is not %T", value)
 	}
-	err := decodeResult(bytes.NewReader(cr.NumericValue), &result)
-	return result, err
+	err := decodeValue(bytes.NewReader(cv.NumericValue), &value)
+	return value, err
 }
 
-func (cr *CommandValue) Uint16Value() (uint16, error) {
-	var result uint16
-	if cr.Type != Uint16 {
-		return result, fmt.Errorf("the data type is not %T", result)
+func (cv *CommandValue) Uint32Value() (uint32, error) {
+	var value uint32
+	if cv.Type != Uint32 {
+		return value, fmt.Errorf("the data type is not %T", value)
 	}
-	err := decodeResult(bytes.NewReader(cr.NumericValue), &result)
-	return result, err
+	err := decodeValue(bytes.NewReader(cv.NumericValue), &value)
+	return value, err
 }
 
-func (cr *CommandValue) Uint32Value() (uint32, error) {
-	var result uint32
-	if cr.Type != Uint32 {
-		return result, fmt.Errorf("the data type is not %T", result)
+func (cv *CommandValue) Uint64Value() (uint64, error) {
+	var value uint64
+	if cv.Type != Uint64 {
+		return value, fmt.Errorf("the data type is not %T", value)
 	}
-	err := decodeResult(bytes.NewReader(cr.NumericValue), &result)
-	return result, err
+	err := decodeValue(bytes.NewReader(cv.NumericValue), &value)
+	return value, err
 }
 
-func (cr *CommandValue) Uint64Value() (uint64, error) {
-	var result uint64
-	if cr.Type != Uint64 {
-		return result, fmt.Errorf("the data type is not %T", result)
+func (cv *CommandValue) Int8Value() (int8, error) {
+	var value int8
+	if cv.Type != Int8 {
+		return value, fmt.Errorf("the data type is not %T", value)
 	}
-	err := decodeResult(bytes.NewReader(cr.NumericValue), &result)
-	return result, err
+	err := decodeValue(bytes.NewReader(cv.NumericValue), &value)
+	return value, err
 }
 
-func (cr *CommandValue) Int8Value() (int8, error) {
-	var result int8
-	if cr.Type != Int8 {
-		return result, fmt.Errorf("the data type is not %T", result)
+func (cv *CommandValue) Int16Value() (int16, error) {
+	var value int16
+	if cv.Type != Int16 {
+		return value, fmt.Errorf("the data type is not %T", value)
 	}
-	err := decodeResult(bytes.NewReader(cr.NumericValue), &result)
-	return result, err
+	err := decodeValue(bytes.NewReader(cv.NumericValue), &value)
+	return value, err
 }
 
-func (cr *CommandValue) Int16Value() (int16, error) {
-	var result int16
-	if cr.Type != Int16 {
-		return result, fmt.Errorf("the data type is not %T", result)
+func (cv *CommandValue) Int32Value() (int32, error) {
+	var value int32
+	if cv.Type != Int32 {
+		return value, fmt.Errorf("the data type is not %T", value)
 	}
-	err := decodeResult(bytes.NewReader(cr.NumericValue), &result)
-	return result, err
+	err := decodeValue(bytes.NewReader(cv.NumericValue), &value)
+	return value, err
 }
 
-func (cr *CommandValue) Int32Value() (int32, error) {
-	var result int32
-	if cr.Type != Int32 {
-		return result, fmt.Errorf("the data type is not %T", result)
+func (cv *CommandValue) Int64Value() (int64, error) {
+	var value int64
+	if cv.Type != Int64 {
+		return value, fmt.Errorf("the data type is not %T", value)
 	}
-	err := decodeResult(bytes.NewReader(cr.NumericValue), &result)
-	return result, err
+	err := decodeValue(bytes.NewReader(cv.NumericValue), &value)
+	return value, err
 }
 
-func (cr *CommandValue) Int64Value() (int64, error) {
-	var result int64
-	if cr.Type != Int64 {
-		return result, fmt.Errorf("the data type is not %T", result)
+func (cv *CommandValue) Float32Value() (float32, error) {
+	var value float32
+	if cv.Type != Float32 {
+		return value, fmt.Errorf("the data type is not %T", value)
 	}
-	err := decodeResult(bytes.NewReader(cr.NumericValue), &result)
-	return result, err
+	err := decodeValue(bytes.NewReader(cv.NumericValue), &value)
+	return value, err
 }
 
-func (cr *CommandValue) Float32Value() (float32, error) {
-	var result float32
-	if cr.Type != Float32 {
-		return result, fmt.Errorf("the data type is not %T", result)
+func (cv *CommandValue) Float64Value() (float64, error) {
+	var value float64
+	if cv.Type != Float64 {
+		return value, fmt.Errorf("the data type is not %T", value)
 	}
-	err := decodeResult(bytes.NewReader(cr.NumericValue), &result)
-	return result, err
-}
-
-func (cr *CommandValue) Float64Value() (float64, error) {
-	var result float64
-	if cr.Type != Float64 {
-		return result, fmt.Errorf("the data type is not %T", result)
-	}
-	err := decodeResult(bytes.NewReader(cr.NumericValue), &result)
-	return result, err
+	err := decodeValue(bytes.NewReader(cv.NumericValue), &value)
+	return value, err
 }
