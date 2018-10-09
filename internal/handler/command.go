@@ -8,6 +8,7 @@
 package handler
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/edgexfoundry/device-sdk-go/internal/cache"
 	"github.com/edgexfoundry/device-sdk-go/internal/common"
@@ -15,6 +16,7 @@ import (
 	"github.com/edgexfoundry/device-sdk-go/model"
 	"io"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -188,7 +190,148 @@ func execGetCmd(device *models.Device, cmd string) (*models.Event, common.AppErr
 }
 
 func execPutCmd(device *models.Device, cmd string, params string) common.AppError {
+	ros, err := cache.Profiles().ResourceOperations(device.Profile.Name, cmd, "set")
+	if err != nil {
+		msg := fmt.Sprintf("Handler - Command: can't find ResrouceOperations in Profile(%s) and Command(%s), %v", device.Profile.Name, cmd, err)
+		common.LogCli.Error(msg)
+		return common.NewBadRequestError(msg, err)
+	}
+	roMap := roSliceToMap(ros)
+
+	cvs, err := parsePutParams(roMap, params)
+	if err != nil {
+		msg := fmt.Sprintf("Handler - Command: Put parameters parsing failed: %s", params)
+		common.LogCli.Error(msg)
+		return common.NewBadRequestError(msg, err)
+	}
+
+	reqs := make([]model.CommandRequest, len(cvs))
+	for i, cv := range cvs {
+		objName := cv.RO.Object
+		common.LogCli.Debug(fmt.Sprintf("Handle - Command: putting deviceObject: %s", objName))
+
+		// TODO: add recursive support for resource command chaining. This occurs when a
+		// deviceprofile resource command operation references another resource command
+		// instead of a device resource (see BoschXDK for reference).
+
+		devObj, ok := cache.Profiles().DeviceObject(device.Profile.Name, objName)
+		common.LogCli.Debug(fmt.Sprintf("Handle - Command: putting deviceObject: %v", devObj))
+		if !ok {
+			msg := fmt.Sprintf("no devobject: %s for dev: %s cmd: %s method: GET", objName, device.Name, cmd)
+			common.LogCli.Error(msg)
+			return common.NewServerError(msg, nil)
+		}
+
+		reqs[i].RO = *cv.RO
+		reqs[i].DeviceObject = devObj
+	}
+
+	err = common.Driver.HandlePutCommands(device.Addressable, reqs, cvs)
+	if err != nil {
+		msg := fmt.Sprintf("HandlePutCommands error for Device: %s cmd: %s, %v", device.Name, cmd, err)
+		return common.NewServerError(msg, err)
+	}
+
 	return nil
+}
+
+func parsePutParams(roMap map[string]*models.ResourceOperation, params string) ([]*model.CommandValue, error) {
+	var paramMaps []map[string]string
+	err := json.Unmarshal([]byte(params), &paramMaps)
+	if err != nil {
+		common.LogCli.Error(fmt.Sprintf("Handler - Command: parsing Put parameters failed %s, %v", params, err))
+		return []*model.CommandValue{}, err
+	}
+
+	result := make([]*model.CommandValue, 0, len(paramMaps))
+	for _, m := range paramMaps {
+		for k, v := range m {
+			ro, ok := roMap[k]
+			if ok {
+				cv, err := createCommandValueForParam(ro, v)
+				if err != nil {
+					result = append(result, cv)
+				} else {
+					return result, err
+				}
+			} else {
+				common.LogCli.Warn(fmt.Sprintf("Handler - Command: The parameter %s cannot find the matched ResourceOperation", k))
+			}
+		}
+	}
+
+	return result, nil
+}
+
+func roSliceToMap(ros []models.ResourceOperation) map[string]*models.ResourceOperation {
+	roMap := make(map[string]*models.ResourceOperation, len(ros))
+	for i, ro := range ros {
+		roMap[ro.Parameter] = &ros[i]
+	}
+	return roMap
+}
+
+func createCommandValueForParam(ro *models.ResourceOperation, v string) (*model.CommandValue, error) {
+	var result *model.CommandValue
+	var err error
+	var value interface{}
+	var t model.ValueType
+	vd, ok := cache.ValueDescriptors().ForName(ro.Object)
+	if !ok {
+		msg := fmt.Sprintf("Handler - Command: The parameter %s cannot find the matched Value Descriptor", ro.Parameter)
+		common.LogCli.Error(msg)
+		return nil, fmt.Errorf(msg)
+	}
+
+	origin := time.Now().UnixNano() / int64(time.Millisecond)
+
+	switch strings.ToLower(vd.Type) {
+	case "bool":
+		value, err = strconv.ParseBool(v)
+		t = model.Bool
+	case "string":
+		value = v
+		t = model.String
+	case "uint8":
+		value, err = strconv.ParseUint(v, 10, 8)
+		t = model.Uint8
+	case "uint16":
+		value, err = strconv.ParseUint(v, 10, 16)
+		t = model.Uint16
+	case "uint32":
+		value, err = strconv.ParseUint(v, 10, 32)
+		t = model.Uint32
+	case "uint64":
+		value, err = strconv.ParseUint(v, 10, 64)
+		t = model.Uint64
+	case "int8":
+		value, err = strconv.ParseInt(v, 10, 8)
+		t = model.Int8
+	case "int16":
+		value, err = strconv.ParseInt(v, 10, 16)
+		t = model.Int16
+	case "int32":
+		value, err = strconv.ParseInt(v, 10, 32)
+		t = model.Int32
+	case "int64":
+		value, err = strconv.ParseInt(v, 10, 64)
+		t = model.Int64
+	case "float32":
+		value, err = strconv.ParseFloat(v,32)
+		t = model.Float32
+	case "float64":
+		value, err = strconv.ParseFloat(v, 64)
+		t = model.Float64
+	}
+
+	if err != nil {
+		common.LogCli.Error(fmt.Sprintf("Handler - Command: Parsing parameter value (%s) to %s failed: %v", v, vd.Type, err))
+		return result, err
+	}
+
+	result, err = model.NewCommandValue(ro, origin, value, t)
+
+	return result, err
 }
 
 func CommandAllFunc(w http.ResponseWriter, r *http.Request) {

@@ -15,45 +15,52 @@ import (
 )
 
 func TransformPutParameter(cv *model.CommandValue, pv models.PropertyValue) error {
-	v, err := strconv.ParseFloat(cv.ValueToString(), 64)
-	if err != nil {
-		common.LogCli.Error(fmt.Sprintf("the CommandValue %s cannot be parsed to float64 for calculation: %v", cv.String(), err))
-		return err
+	var err error
+
+	if pv.Offset != "" {
+		err = transformPutOffset(cv, pv.Offset)
+		if err != nil {
+			return err
+		}
 	}
 
 	if pv.Scale != "" {
-		v, err = transformPutScale(v, pv.Scale)
+		err = transformPutScale(cv, pv.Scale)
 	}
-
-	if pv.Offset != "" {
-		v, err = transformPutOffset(v, pv.Offset)
-	}
-
-	err = replaceNumericValue(cv, v)
 	return err
 }
 
-func transformPutScale(v float64, scale string) (float64, error) {
+func transformPutScale(cv *model.CommandValue, scale string) error {
+	v, err := commandValueToFloat64(cv)
+	if err != nil {
+		return err
+	}
 	s, err := strconv.ParseFloat(scale, 64)
 	if err != nil {
 		common.LogCli.Error(fmt.Sprintf("the scale %s of PropertyValue cannot be parsed to float64: %v", scale, err))
-		return v, err
+		return err
 	}
 
 	if s == 0 {
-		return v, fmt.Errorf("scale is 0")
+		return fmt.Errorf("scale is 0")
 	}
 	v = v / s
-	return v, err
+	err = replaceCommandValueFromFloat64(cv, v)
+	return err
 }
 
-func transformPutOffset(v float64, offset string) (float64, error) {
+func transformPutOffset(cv *model.CommandValue, offset string) error {
+	v, err := commandValueToFloat64(cv)
+	if err != nil {
+		return err
+	}
 	o, err := strconv.ParseFloat(offset, 64)
 	if err != nil {
 		common.LogCli.Error(fmt.Sprintf("the offset %s of PropertyValue cannot be parsed to float64: %v", offset, err))
-		return v, err
+		return err
 	}
 
 	v = v - o
-	return v, err
+	err = replaceCommandValueFromFloat64(cv, v)
+	return err
 }

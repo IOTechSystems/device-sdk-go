@@ -9,6 +9,7 @@ package model
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/binary"
 	"fmt"
 	"github.com/edgexfoundry/device-sdk-go/internal/common"
@@ -163,6 +164,13 @@ func NewFloat64Value(ro *models.ResourceOperation, origin int64, value float64) 
 	return
 }
 
+//NewCommandValue create a CommandValue according to the Type supplied
+func NewCommandValue(ro *models.ResourceOperation, origin int64, value interface{}, t ValueType) (cv *CommandValue, err error ) {
+	cv = &CommandValue{RO: ro, Origin: origin, Type: t}
+	err = encodeValue(cv, value)
+	return
+}
+
 func encodeValue(cv *CommandValue, value interface{}) error {
 	buf := new(bytes.Buffer)
 	err := binary.Write(buf, binary.BigEndian, value)
@@ -256,13 +264,15 @@ func (cv *CommandValue) ValueToString() (str string) {
 		}
 		str = strconv.FormatInt(res, 10)
 	case Float32:
-		var res float32
-		binary.Read(reader, binary.BigEndian, &res)
-		str = strconv.FormatFloat(float64(res), 'f', -1, 32)
+		//var res float32
+		//binary.Read(reader, binary.BigEndian, &res)
+		//str = strconv.FormatFloat(float64(res), 'f', -1, 32)
+		str = base64.StdEncoding.EncodeToString(cv.NumericValue)
 	case Float64:
-		var res float64
-		binary.Read(reader, binary.BigEndian, &res)
-		str = strconv.FormatFloat(res, 'f', -1, 64)
+		//var res float64
+		//binary.Read(reader, binary.BigEndian, &res)
+		//str = strconv.FormatFloat(res, 'f', -1, 64)
+		str = base64.StdEncoding.EncodeToString(cv.NumericValue)
 	}
 
 	return
@@ -271,7 +281,7 @@ func (cv *CommandValue) ValueToString() (str string) {
 // String returns a string representation of a CommandValue instance.
 func (cv *CommandValue) String() (str string) {
 
-	originStr := fmt.Sprintf("%d\n", cv.Origin)
+	originStr := fmt.Sprintf("Origin: %d, ", cv.Origin)
 
 	var typeStr string
 
