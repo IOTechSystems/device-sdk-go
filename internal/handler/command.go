@@ -18,6 +18,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/edgexfoundry/edgex-go/pkg/models"
@@ -29,12 +30,6 @@ import (
 func CommandHandler(vars map[string]string, body string, method string) (*models.Event, common.AppError) {
 	id := vars["id"]
 	cmd := vars["command"]
-
-	if common.ServiceLocked {
-		msg := fmt.Sprintf("%s is locked; %s", common.ServiceName, method)
-		common.LogCli.Error(msg)
-		return nil, common.NewLockedError(msg, nil)
-	}
 
 	// TODO - models.Device isn't thread safe currently
 	d, ok := cache.Devices().ForId(id)
@@ -334,34 +329,30 @@ func createCommandValueForParam(ro *models.ResourceOperation, v string) (*model.
 	return result, err
 }
 
-func CommandAllFunc(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
+func CommandAllHandler(cmd string, body string, method string) ([]*models.Event, common.AppError) {
+	common.LogCli.Debug(fmt.Sprintf("Handler - Command: execute the Get command %s from all operational devices", cmd))
+	devices := filterOperationalDevices(cache.Devices().All())
 
-	common.LogCli.Debug(fmt.Sprintf("cmd: dev: all cmd: %s", vars["command"]))
+	waitNum := len(devices)
+	var waitGroup sync.WaitGroup
+	waitGroup.Add(waitNum)
+	getCmdResults := make(chan *models.Event, waitNum)
+	CmdAppErr := make(chan common.AppError, waitNum)
 
-	if common.ServiceLocked {
-		msg := fmt.Sprintf("%s is locked; %s %s", common.ServiceName, r.Method, r.URL)
-		common.LogCli.Error(msg)
-		http.Error(w, msg, http.StatusLocked) // status=423
-		return
+
+
+
+}
+
+func filterOperationalDevices(devices []models.Device) []*models.Device {
+	result := make([]*models.Device, 0 , len(devices))
+	for i, d := range devices {
+		if (d.AdminState == models.Locked) || (d.OperatingState == models.Disabled) {
+			continue
+		}
+		result = append(result, &devices[i])
 	}
-
-	w.WriteHeader(200)
-	io.WriteString(w, "OK")
-
-	// pseudo-logic
-	// loop thru all existing devices:
-	// if devices.deviceBy(id).locked --> return http.StatusLocked; cache access needs to be sync'd
-	// TODO: add check for device-not-found; Java code doesn't check this
-	// TODO: need to mark device when operation in progress, so it can't be removed till completed...
-	// if commandExists == false --> return http.StatusNotFound (404);
-	//    (in Java, <proto>Handler implements commandExists, which delegates to the ProfileStore
-	//    executeCommand
-	//      (also from <proto>Handler:
-	//      - creates new transaction
-	//      - eventually calls <proto>Driver.process
-	//      - waits on transaction to complete
-	//      - formats reading(s) into an event, sends to core-data, return result
+	return result
 }
 
 func sendEvent(event *models.Event) {
