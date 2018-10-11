@@ -110,11 +110,9 @@ func commandAllFunc(w http.ResponseWriter, req *http.Request) {
 	events, appErr := handler.CommandAllHandler(vars["command"], body, req.Method)
 	if appErr != nil {
 		http.Error(w, appErr.Message(), appErr.Code())
-	} else if events != nil {
+	} else if len(events) > 0 {
 		w.Header().Set("Content-Type", "application/json")
-		for i, _ := range events {
-			json.NewEncoder(w).Encode(events[i])
-		}
+		json.NewEncoder(w).Encode(events)
 	}
 }
 

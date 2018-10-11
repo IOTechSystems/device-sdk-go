@@ -14,15 +14,12 @@ import (
 	"github.com/edgexfoundry/device-sdk-go/internal/common"
 	"github.com/edgexfoundry/device-sdk-go/internal/transformer"
 	"github.com/edgexfoundry/device-sdk-go/model"
-	"io"
-	"net/http"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/edgexfoundry/edgex-go/pkg/models"
-	"github.com/gorilla/mux"
 )
 
 // Note, every HTTP request to ServeHTTP is made in a separate goroutine, which
@@ -330,16 +327,53 @@ func createCommandValueForParam(ro *models.ResourceOperation, v string) (*model.
 }
 
 func CommandAllHandler(cmd string, body string, method string) ([]*models.Event, common.AppError) {
-	common.LogCli.Debug(fmt.Sprintf("Handler - Command: execute the Get command %s from all operational devices", cmd))
+	common.LogCli.Debug(fmt.Sprintf("Handler - CommandAll: execute the %s command %s from all operational devices", method, cmd))
 	devices := filterOperationalDevices(cache.Devices().All())
 
-	waitNum := len(devices)
+	devCount := len(devices)
 	var waitGroup sync.WaitGroup
-	waitGroup.Add(waitNum)
-	getCmdResults := make(chan *models.Event, waitNum)
-	CmdAppErr := make(chan common.AppError, waitNum)
+	waitGroup.Add(devCount)
+	cmdResults := make(chan struct{
+		event *models.Event
+		appErr common.AppError}, devCount)
 
+	for i, _ := range devices {
+		go func() {
+			defer waitGroup.Done()
+			var event *models.Event = nil
+			var appErr common.AppError = nil
+			if strings.ToLower(method) == "get" {
+				event, appErr = execGetCmd(devices[i], cmd)
+			} else {
+				appErr = execPutCmd(devices[i], cmd, body)
+			}
+			cmdResults <- struct{
+				event *models.Event
+				appErr common.AppError} {event, appErr}
+		} ()
+	}
+	waitGroup.Wait()
+	close(cmdResults)
 
+	errCount := 0
+	getResults := make([]*models.Event, 0 , devCount)
+	var appErr common.AppError
+	for r := range cmdResults {
+		if r.appErr != nil {
+			errCount ++
+			common.LogCli.Error("Handler - CommandAll: " + r.appErr.Message())
+			appErr = r.appErr // only the last error will be returned
+		} else if r.event != nil {
+			getResults = append(getResults, r.event)
+		}
+	}
+
+	if errCount < devCount {
+		common.LogCli.Info("Handler - CommandAll: part of commands executed successfully, returning 200 OK")
+		appErr = nil
+	}
+
+	return getResults, appErr
 
 
 }
