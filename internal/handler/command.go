@@ -127,10 +127,12 @@ func execGetCmd(device *models.Device, cmd string) (*models.Event, common.AppErr
 			return nil, common.NewServerError(msg, nil)
 		}
 
-		err = transformer.TransformGetResult(&cv, do.Properties.Value)
-		if err != nil {
-			common.LogCli.Error(fmt.Sprintf("CommandValue (%s) transformed failed: %v", cv.String(), err))
-			transformsOK = false
+		if common.CurrentConfig.Device.DataTransform {
+			err = transformer.TransformGetResult(&cv, do.Properties.Value)
+			if err != nil {
+				common.LogCli.Error(fmt.Sprintf("CommandValue (%s) transformed failed: %v", cv.String(), err))
+				transformsOK = false
+			}
 		}
 
 		err = transformer.CheckAssertion(&cv, do.Properties.Value.Assertion, device)
@@ -216,6 +218,23 @@ func execPutCmd(device *models.Device, cmd string, params string) common.AppErro
 
 		reqs[i].RO = *cv.RO
 		reqs[i].DeviceObject = devObj
+
+		if common.CurrentConfig.Device.DataTransform {
+			err = transformer.TransformPutParameter(cv, devObj.Properties.Value)
+			if err != nil {
+				msg := fmt.Sprintf("Handler - parsePutParams: CommandValue (%s) transformed failed: %v", cv.String(), err)
+				common.LogCli.Error(msg)
+				return common.NewServerError(msg, err)
+			}
+		}
+
+		mappings := cv.RO.Mappings
+		if len(mappings) > 0 {
+			newCV, ok := transformer.MapCommandValue(cv, mappings)
+			if ok {
+				cv = newCV
+			}
+		}
 	}
 
 	err = common.Driver.HandlePutCommands(device.Addressable, reqs, cvs)
@@ -241,7 +260,7 @@ func parsePutParams(roMap map[string]*models.ResourceOperation, params string) (
 			ro, ok := roMap[k]
 			if ok {
 				cv, err := createCommandValueForParam(ro, v)
-				if err != nil {
+				if err == nil {
 					result = append(result, cv)
 				} else {
 					return result, err
