@@ -1,6 +1,7 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
 //
-// Copyright (C) 2017-2018 Canonical Ltd
+// Copyright (C) 2018 Canonical Ltd
+// Copyright (C) 2018 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -12,14 +13,15 @@ package driver
 import (
 	"fmt"
 	"github.com/edgexfoundry/device-sdk-go/model"
+	"time"
 
-	device "github.com/edgexfoundry/device-sdk-go"
 	logger "github.com/edgexfoundry/edgex-go/pkg/clients/logging"
 	"github.com/edgexfoundry/edgex-go/pkg/models"
 )
 
 type SimpleDriver struct {
 	lc logger.LoggingClient
+	asyncCh chan<- model.AsyncValues
 }
 
 // DisconnectDevice handles protocol-specific cleanup when a device
@@ -32,9 +34,9 @@ func (s *SimpleDriver) DisconnectDevice(address *models.Addressable) error {
 // service.  If the DS supports asynchronous data pushed from devices/sensors,
 // then a valid receive' channel must be created and returned, otherwise nil
 // is returned.
-func (s *SimpleDriver) Initialize(svc *device.Service, lc logger.LoggingClient, asyncCh <-chan *model.CommandValue) error {
+func (s *SimpleDriver) Initialize(lc logger.LoggingClient, asyncCh chan<- model.AsyncValues) error {
 	s.lc = lc
-	s.lc.Debug(fmt.Sprintf("SimpleHandler.Initialize called!"))
+	s.asyncCh = asyncCh
 	return nil
 }
 
@@ -47,14 +49,13 @@ func (s *SimpleDriver) HandleGetCommands(addr models.Addressable, reqs []model.C
 		return
 	}
 
-	s.lc.Debug(fmt.Sprintf("HandleCommand: dev: %s op: %v attrs: %v", addr.Name, reqs[0].RO.Operation, reqs[0].DeviceObject.Attributes))
+	s.lc.Debug(fmt.Sprintf("HandleGetCommand: dev: %s op: %v attrs: %v", addr.Name, reqs[0].RO.Operation, reqs[0].DeviceObject.Attributes))
 
 	res = make([]model.CommandValue, 1)
 
-	// TODO: change CommandValue to get rid of pointer to RO
-	res[0].RO = &reqs[0].RO
-	res[0].Type = model.Bool
-	res[0].BoolResult = true
+	now := time.Now().UnixNano() / int64(time.Millisecond)
+	cv, _ := model.NewBoolValue(&reqs[0].RO, now, true)
+	res[0] = *cv
 
 	return
 }
@@ -67,7 +68,7 @@ func (s *SimpleDriver) HandlePutCommands(addr models.Addressable, reqs []model.C
 		return err
 	}
 
-	s.lc.Debug(fmt.Sprintf("HandleCommand: dev: %s op: %v attrs: %v", addr.Name, reqs[0].RO.Operation, reqs[0].DeviceObject.Attributes))
+	s.lc.Debug(fmt.Sprintf("HandlePutCommand: dev: %s op: %v attrs: %v", addr.Name, reqs[0].RO.Operation, reqs[0].DeviceObject.Attributes))
 
 	return nil
 }

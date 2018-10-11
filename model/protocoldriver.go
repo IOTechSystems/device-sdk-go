@@ -1,6 +1,7 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
 //
 // Copyright (C) 2018 Canonical Ltd
+// Copyright (C) 2018 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -35,17 +36,16 @@ type ProtocolDriver interface {
 	// Initialize performs protocol-specific initialization for the device
 	// service. The given *CommandValue channel can be used to push asynchronous
 	// events and readings to Core Data.
-	Initialize(s *Service, lc logger.LoggingClient, asyncCh <-chan *CommandValue) error
+	Initialize(lc logger.LoggingClient, asyncCh chan<- AsyncValues) error
 
-	// HandleCommands passes a slice of CommandRequest structs each representing
+	// HandleGetCommands passes a slice of CommandRequest struct each representing
 	// a ResourceOperation for a specific device resource (aka DeviceObject).
-	// If commands are actuation commands, then params may be used to provide
-	// an optional JSON encoded string specifying paramters for the individual
-	// commands.
-	//
-	// TODO: add param to CommandRequest and have command endpoint parse the params.
 	HandleGetCommands(addr models.Addressable, reqs []CommandRequest) ([]CommandValue, error)
 
+	// HandlePutCommands passes a slice of CommandRequest struct each representing
+	// a ResourceOperation for a specific device resource (aka DeviceObject).
+	// Since the commands are actuation commands, params provide parameters for the individual
+	// command.
 	HandlePutCommands(addr models.Addressable, reqs []CommandRequest, params []*CommandValue) error
 
 	// Stop instructs the protocol-specific DS code to shutdown gracefully, or

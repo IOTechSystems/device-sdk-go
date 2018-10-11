@@ -16,7 +16,7 @@ import (
 	"syscall"
 
 	"github.com/edgexfoundry/device-sdk-go"
-	"github.com/edgexfoundry/device-sdk-go/driver"
+	"github.com/edgexfoundry/device-sdk-go/example/driver"
 	"github.com/edgexfoundry/device-sdk-go/internal/common"
 	configLoader "github.com/edgexfoundry/device-sdk-go/internal/config"
 )
