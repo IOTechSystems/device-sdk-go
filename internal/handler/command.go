@@ -143,7 +143,7 @@ func execGetCmd(device *models.Device, cmd string) (*models.Event, common.AppErr
 
 		mappings := cv.RO.Mappings
 		if mappings != nil && len(mappings) > 0 {
-			newCV, ok := transformer.MapCommandValue(&cv, mappings)
+			newCV, ok := transformer.MapCommandValue(&cv)
 			if ok {
 				cv = *newCV
 			}
@@ -230,7 +230,7 @@ func execPutCmd(device *models.Device, cmd string, params string) common.AppErro
 
 		mappings := cv.RO.Mappings
 		if len(mappings) > 0 {
-			newCV, ok := transformer.MapCommandValue(cv, mappings)
+			newCV, ok := transformer.MapCommandValue(cv)
 			if ok {
 				cv = newCV
 			}

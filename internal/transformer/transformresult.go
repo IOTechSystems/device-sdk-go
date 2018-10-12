@@ -212,7 +212,8 @@ func CheckAssertion(cv *model.CommandValue, assertion string, device *models.Dev
 	return nil
 }
 
-func MapCommandValue(value *model.CommandValue, mappings map[string]string) (*model.CommandValue, bool) {
+func MapCommandValue(value *model.CommandValue) (*model.CommandValue, bool) {
+	mappings := value.RO.Mappings
 	newValue, ok := mappings[value.ValueToString()]
 	var result *model.CommandValue
 	if ok {

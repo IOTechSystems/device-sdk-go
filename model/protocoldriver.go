@@ -36,11 +36,11 @@ type ProtocolDriver interface {
 	// Initialize performs protocol-specific initialization for the device
 	// service. The given *CommandValue channel can be used to push asynchronous
 	// events and readings to Core Data.
-	Initialize(lc logger.LoggingClient, asyncCh chan<- AsyncValues) error
+	Initialize(lc logger.LoggingClient, asyncCh chan<- *AsyncValues) error
 
 	// HandleGetCommands passes a slice of CommandRequest struct each representing
 	// a ResourceOperation for a specific device resource (aka DeviceObject).
-	HandleGetCommands(addr models.Addressable, reqs []CommandRequest) ([]CommandValue, error)
+	HandleGetCommands(addr models.Addressable, reqs []CommandRequest) ([]*CommandValue, error)
 
 	// HandlePutCommands passes a slice of CommandRequest struct each representing
 	// a ResourceOperation for a specific device resource (aka DeviceObject).

@@ -41,7 +41,7 @@ type Service struct {
 	stopped       bool
 	scca          ScheduleCacheInterface
 	cw            *Watchers
-	asyncCh       <-chan *model.CommandValue
+	asyncCh       chan *model.AsyncValues
 }
 
 func (s *Service) Name() string {
@@ -87,12 +87,12 @@ func (s *Service) Start(svcInfo *common.ServiceInfo) (err error) {
 	// initialize driver
 	if s.asyncReadings {
 		// TODO: make channel buffer size a setting
-		s.asyncCh = make(<-chan *model.CommandValue, 16)
+		s.asyncCh = make(chan *model.AsyncValues, 16)
 
 		go processAsyncResults()
 	}
 
-	err = s.proto.Initialize(s, common.LogCli, s.asyncCh)
+	err = common.Driver.Initialize(common.LogCli, s.asyncCh)
 	if err != nil {
 		common.LogCli.Error(fmt.Sprintf("Driver.Initialize failure: %v; exiting.", err))
 		return err

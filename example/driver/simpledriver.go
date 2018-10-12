@@ -21,7 +21,7 @@ import (
 
 type SimpleDriver struct {
 	lc logger.LoggingClient
-	asyncCh chan<- model.AsyncValues
+	asyncCh chan<- *model.AsyncValues
 }
 
 // DisconnectDevice handles protocol-specific cleanup when a device
@@ -34,7 +34,7 @@ func (s *SimpleDriver) DisconnectDevice(address *models.Addressable) error {
 // service.  If the DS supports asynchronous data pushed from devices/sensors,
 // then a valid receive' channel must be created and returned, otherwise nil
 // is returned.
-func (s *SimpleDriver) Initialize(lc logger.LoggingClient, asyncCh chan<- model.AsyncValues) error {
+func (s *SimpleDriver) Initialize(lc logger.LoggingClient, asyncCh chan<- *model.AsyncValues) error {
 	s.lc = lc
 	s.asyncCh = asyncCh
 	return nil
@@ -42,7 +42,7 @@ func (s *SimpleDriver) Initialize(lc logger.LoggingClient, asyncCh chan<- model.
 
 // HandleCommand triggers an asynchronous protocol specific GET or SET operation
 // for the specified device.
-func (s *SimpleDriver) HandleGetCommands(addr models.Addressable, reqs []model.CommandRequest) (res []model.CommandValue, err error) {
+func (s *SimpleDriver) HandleGetCommands(addr models.Addressable, reqs []model.CommandRequest) (res []*model.CommandValue, err error) {
 
 	if len(reqs) != 1 {
 		err = fmt.Errorf("SimpleDriver.HandleCommands; too many command requests; only one supported")
@@ -51,17 +51,17 @@ func (s *SimpleDriver) HandleGetCommands(addr models.Addressable, reqs []model.C
 
 	s.lc.Debug(fmt.Sprintf("HandleGetCommand: dev: %s op: %v attrs: %v", addr.Name, reqs[0].RO.Operation, reqs[0].DeviceObject.Attributes))
 
-	res = make([]model.CommandValue, 1)
+	res = make([]*model.CommandValue, 1)
 
 	now := time.Now().UnixNano() / int64(time.Millisecond)
 	cv, _ := model.NewBoolValue(&reqs[0].RO, now, true)
-	res[0] = *cv
+	res[0] = cv
 
 	return
 }
 
 func (s *SimpleDriver) HandlePutCommands(addr models.Addressable, reqs []model.CommandRequest,
-	params map[string]model.CommandValue) error {
+	params []*model.CommandValue) error {
 
 	if len(reqs) != 1 {
 		err := fmt.Errorf("SimpleDriver.HandleCommands; too many command requests; only one supported")
