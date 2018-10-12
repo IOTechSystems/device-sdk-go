@@ -365,20 +365,20 @@ func CommandAllHandler(cmd string, body string, method string) ([]*models.Event,
 	}, devCount)
 
 	for i, _ := range devices {
-		go func() {
+		go func(device *models.Device) {
 			defer waitGroup.Done()
 			var event *models.Event = nil
 			var appErr common.AppError = nil
 			if strings.ToLower(method) == "get" {
-				event, appErr = execGetCmd(devices[i], cmd)
+				event, appErr = execGetCmd(device, cmd)
 			} else {
-				appErr = execPutCmd(devices[i], cmd, body)
+				appErr = execPutCmd(device, cmd, body)
 			}
 			cmdResults <- struct {
 				event  *models.Event
 				appErr common.AppError
 			}{event, appErr}
-		}()
+		}(devices[i])
 	}
 	waitGroup.Wait()
 	close(cmdResults)

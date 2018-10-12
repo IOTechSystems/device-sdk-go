@@ -46,7 +46,7 @@ func transformPutBase(cv *model.CommandValue, base string) error {
 	}
 	b, err := strconv.ParseFloat(base, 64)
 	if err != nil {
-		common.LogCli.Error(fmt.Sprintf("the scale %s of PropertyValue cannot be parsed to float64: %v", scale, err))
+		common.LogCli.Error(fmt.Sprintf("the scale %s of PropertyValue cannot be parsed to float64: %v", base, err))
 		return err
 	}
 

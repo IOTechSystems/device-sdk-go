@@ -490,7 +490,7 @@ func TestNewFloat32Value(t *testing.T) {
 	if v != value {
 		t.Errorf("NewFloat32Value: float32 value is incorrect")
 	}
-	if cv.ValueToString() != "0.000000000000000000000000000000000000000000001" {
+	if cv.ValueToString() != "AAAAAQ==" {
 		t.Errorf("NewFloat32Value #1: invalid reading Value: %s", cv.ValueToString())
 	}
 
@@ -512,7 +512,7 @@ func TestNewFloat32Value(t *testing.T) {
 	if v != value {
 		t.Errorf("NewFloat32Value: float32 value is incorrect")
 	}
-	if cv.ValueToString() != "340282350000000000000000000000000000000" {
+	if cv.ValueToString() != "f3///w==" {
 		t.Errorf("NewFloat32Value #2: invalid reading Value: %s", cv.ValueToString())
 	}
 }
@@ -541,7 +541,7 @@ func TestNewFloat64Value(t *testing.T) {
 	if v != value {
 		t.Errorf("NewFloat64Value: float64 value is incorrect")
 	}
-	if cv.ValueToString() != "0.000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000005" {
+	if cv.ValueToString() != "AAAAAAAAAAE=" {
 		t.Errorf("NewFloat64Value #1: invalid reading Value: %s", cv.ValueToString())
 	}
 
@@ -563,7 +563,7 @@ func TestNewFloat64Value(t *testing.T) {
 	if v != value {
 		t.Errorf("NewFloat64Value: float64 value is incorrect")
 	}
-	if cv.ValueToString() != "179769313486231570000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" {
+	if cv.ValueToString() != "f+////////8=" {
 		t.Errorf("NewFloat64Value #2: invalid reading Value: %s", cv.ValueToString())
 	}
 }

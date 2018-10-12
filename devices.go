@@ -356,8 +356,6 @@ func compareDeviceProfiles(a models.DeviceProfile, b models.DeviceProfile) bool 
 		cmdsOk &&
 		devResourcesOk &&
 		resourcesOk
-
-	return true
 }
 
 func compareDeviceResources(a []models.DeviceObject, b []models.DeviceObject) bool {
