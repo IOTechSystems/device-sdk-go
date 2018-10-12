@@ -75,22 +75,22 @@ func execGetCmd(device *models.Device, cmd string) (*models.Event, common.AppErr
 	readings := make([]models.Reading, 0, common.CurrentConfig.Device.MaxCmdOps)
 
 	// make ResourceOperations
-	ops, err := cache.Profiles().ResourceOperations(device.Profile.Name, cmd, "get")
+	ros, err := cache.Profiles().ResourceOperations(device.Profile.Name, cmd, "get")
 	if err != nil {
 		common.LogCli.Error(err.Error())
 		return nil, common.NewNotFoundError(err.Error(), err)
 	}
 
-	if len(ops) > common.CurrentConfig.Device.MaxCmdOps {
+	if len(ros) > common.CurrentConfig.Device.MaxCmdOps {
 		msg := fmt.Sprintf("MaxCmdOps (%d) execeeded for dev: %s cmd: %s method: GET",
 			common.CurrentConfig.Device.MaxCmdOps, device.Name, cmd)
 		common.LogCli.Error(msg)
 		return nil, common.NewServerError(msg, nil)
 	}
 
-	reqs := make([]model.CommandRequest, len(ops))
+	reqs := make([]model.CommandRequest, len(ros))
 
-	for i, op := range ops {
+	for i, op := range ros {
 		objName := op.Object
 		common.LogCli.Debug(fmt.Sprintf("deviceObject: %s", objName))
 
@@ -128,24 +128,23 @@ func execGetCmd(device *models.Device, cmd string) (*models.Event, common.AppErr
 		}
 
 		if common.CurrentConfig.Device.DataTransform {
-			err = transformer.TransformGetResult(&cv, do.Properties.Value)
+			err = transformer.TransformGetResult(cv, do.Properties.Value)
 			if err != nil {
 				common.LogCli.Error(fmt.Sprintf("CommandValue (%s) transformed failed: %v", cv.String(), err))
 				transformsOK = false
 			}
 		}
 
-		err = transformer.CheckAssertion(&cv, do.Properties.Value.Assertion, device)
+		err = transformer.CheckAssertion(cv, do.Properties.Value.Assertion, device)
 		if err != nil {
 			common.LogCli.Error(fmt.Sprintf("Assertion failed for device resource: %s, with value: %s", cv.String(), err))
 			transformsOK = false
 		}
 
-		mappings := cv.RO.Mappings
-		if mappings != nil && len(mappings) > 0 {
-			newCV, ok := transformer.MapCommandValue(&cv)
+		if len(cv.RO.Mappings) > 0 {
+			newCV, ok := transformer.MapCommandValue(cv)
 			if ok {
-				cv = *newCV
+				cv = newCV
 			}
 		}
 
@@ -156,7 +155,7 @@ func execGetCmd(device *models.Device, cmd string) (*models.Event, common.AppErr
 		// been implemened in gxds. TBD at the devices f2f whether this
 		// be killed completely.
 
-		reading := commandValueToReading(&cv, device.Name)
+		reading := common.CommandValueToReading(cv, device.Name)
 		readings = append(readings, *reading)
 
 		common.LogCli.Debug(fmt.Sprintf("dev: %s RO: %v reading: %v", device.Name, cv.RO, reading))
@@ -165,7 +164,7 @@ func execGetCmd(device *models.Device, cmd string) (*models.Event, common.AppErr
 	// push to Core Data
 	event := &models.Event{Device: device.Name, Readings: readings}
 	event.Origin = time.Now().UnixNano() / int64(time.Millisecond)
-	go sendEvent(event)
+	go common.SendEvent(event)
 
 	// TODO: the 'all' form of the endpoint returns 200 if a transform
 	// overflow or assertion trips...
@@ -190,6 +189,14 @@ func execPutCmd(device *models.Device, cmd string, params string) common.AppErro
 		common.LogCli.Error(msg)
 		return common.NewBadRequestError(msg, err)
 	}
+
+	if len(ros) > common.CurrentConfig.Device.MaxCmdOps {
+		msg := fmt.Sprintf("MaxCmdOps (%d) execeeded for dev: %s cmd: %s method: PUT",
+			common.CurrentConfig.Device.MaxCmdOps, device.Name, cmd)
+		common.LogCli.Error(msg)
+		return common.NewServerError(msg, nil)
+	}
+
 	roMap := roSliceToMap(ros)
 
 	cvs, err := parsePutParams(roMap, params)
@@ -407,25 +414,4 @@ func filterOperationalDevices(devices []models.Device) []*models.Device {
 		result = append(result, &devices[i])
 	}
 	return result
-}
-
-func sendEvent(event *models.Event) {
-	_, err := common.EvtCli.Add(event)
-	if err != nil {
-		common.LogCli.Error(fmt.Sprintf("Failed to push event for device %s: %s", event.Device, err))
-	}
-}
-
-func commandValueToReading(cv *model.CommandValue, devName string) *models.Reading {
-	reading := &models.Reading{Name: cv.RO.Parameter, Device: devName}
-	reading.Value = cv.ValueToString()
-
-	// if value has a non-zero Origin, use it
-	if cv.Origin > 0 {
-		reading.Origin = cv.Origin
-	} else {
-		reading.Origin = time.Now().UnixNano() / int64(time.Millisecond)
-	}
-
-	return reading
 }

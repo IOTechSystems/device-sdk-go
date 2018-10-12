@@ -9,7 +9,9 @@ package device
 import (
 	"fmt"
 
+	"github.com/edgexfoundry/device-sdk-go/internal/cache"
 	"github.com/edgexfoundry/device-sdk-go/internal/common"
+	"github.com/edgexfoundry/device-sdk-go/internal/transformer"
 	"github.com/edgexfoundry/edgex-go/pkg/models"
 )
 
@@ -18,23 +20,49 @@ import (
 // before being pushed to Core Data.
 func processAsyncResults() {
 	for !svc.stopped {
-		readings := make([]models.Reading, 0, common.CurrentConfig.Device.MaxCmdOps)
-		cr := <-svc.asyncCh
+		acv := <-svc.asyncCh
+		readings := make([]models.Reading, 0, len(acv.CommandValues))
 
-		// get the device resource associated with the rsp.RO
-		do := pc.getDeviceObjectByName(cr.DeviceName, cr.RO)
+		deviceName := acv.DeviceName
+		device, ok := cache.Devices().ForName(deviceName)
+		if !ok {
+			common.LogCli.Error(fmt.Sprintf("processAsyncResults - recieved Device %s not found in cache", deviceName))
+			continue
+		}
 
-		_ = cr.TransformResult(do.Properties.Value)
+		for _, cv := range acv.CommandValues {
+			// get the device resource associated with the rsp.RO
+			do, ok := cache.Profiles().DeviceObject(device.Profile.Name, cv.RO.Object)
+			if !ok {
+				common.LogCli.Error(fmt.Sprintf("processAsyncResults - Device Resource %s not found in Device %s", cv.RO.Object, deviceName))
+				continue
+			}
 
-		reading := cr.reading(cr.DeviceName, do.Name)
-		readings = append(readings, *reading)
+			if common.CurrentConfig.Device.DataTransform {
+				err := transformer.TransformGetResult(cv, do.Properties.Value)
+				if err != nil {
+					common.LogCli.Error(fmt.Sprintf("CommandValue (%s) transformed failed: %v", cv.String(), err))
+				}
+			}
+
+			err := transformer.CheckAssertion(cv, do.Properties.Value.Assertion, &device)
+			if err != nil {
+				common.LogCli.Error(fmt.Sprintf("Assertion failed for Device Resource: %s, with value: %s", cv.String(), err))
+			}
+
+			if len(cv.RO.Mappings) > 0 {
+				newCV, ok := transformer.MapCommandValue(cv)
+				if ok {
+					cv = newCV
+				}
+			}
+
+			reading := common.CommandValueToReading(cv, device.Name)
+			readings = append(readings, *reading)
+		}
 
 		// push to Core Data
-		event := &models.Event{Device: cr.DeviceName, Readings: readings}
-		_, err := common.EvtCli.Add(event)
-		if err != nil {
-			msg := fmt.Sprintf("internal error; failed to push event for dev: %s to CoreData: %s", cr.DeviceName, err)
-			common.LogCli.Error(msg)
-		}
+		event := &models.Event{Device: deviceName, Readings: readings}
+		go common.SendEvent(event)
 	}
 }
