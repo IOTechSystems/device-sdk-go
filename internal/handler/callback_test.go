@@ -8,12 +8,12 @@ package handler
 
 import (
 	"bytes"
-	"github.com/edgexfoundry/device-sdk-go/internal/common"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
-	logger "github.com/edgexfoundry/edgex-go/pkg/clients/logging"
+	"github.com/edgexfoundry/device-sdk-go/internal/common"
+	"github.com/edgexfoundry/edgex-go/pkg/clients/logging"
 	"github.com/gorilla/mux"
 )
 

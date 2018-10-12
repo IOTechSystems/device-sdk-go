@@ -10,13 +10,13 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
+	"math"
+	"strconv"
+
 	"github.com/edgexfoundry/device-sdk-go/internal/common"
 	"github.com/edgexfoundry/device-sdk-go/model"
 	"github.com/edgexfoundry/edgex-go/pkg/models"
-	"math"
-	"strconv"
 )
-
 
 func TransformGetResult(cv *model.CommandValue, pv models.PropertyValue) error {
 	var err error

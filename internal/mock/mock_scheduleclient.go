@@ -1,3 +1,4 @@
+// -*- Mode: Go; indent-tabs-mode: t -*-
 //
 // Copyright (C) 2018 IOTech Ltd
 //
@@ -5,8 +6,11 @@
 
 package mock
 
-import "errors"
-import "github.com/edgexfoundry/edgex-go/pkg/models"
+import (
+	"errors"
+
+	"github.com/edgexfoundry/edgex-go/pkg/models"
+)
 
 type ScheduleClientMock struct {
 }

@@ -1,3 +1,4 @@
+// -*- Mode: Go; indent-tabs-mode: t -*-
 //
 // Copyright (C) 2018 IOTech Ltd
 //
@@ -7,11 +8,11 @@ package registry
 
 import (
 	"errors"
+	"fmt"
 	"reflect"
 	"strconv"
 	"strings"
 
-	"fmt"
 	consulapi "github.com/hashicorp/consul/api"
 )
 

@@ -14,10 +14,10 @@ package device
 import (
 	"errors"
 	"fmt"
-	"github.com/edgexfoundry/device-sdk-go/internal/common"
 	"sync"
 	"time"
 
+	"github.com/edgexfoundry/device-sdk-go/internal/common"
 	"github.com/edgexfoundry/edgex-go/pkg/models"
 	"gopkg.in/mgo.v2/bson"
 )

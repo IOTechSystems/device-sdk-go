@@ -8,10 +8,11 @@
 package device
 
 import (
+	"testing"
+
 	"github.com/edgexfoundry/device-sdk-go/internal/common"
 	"github.com/edgexfoundry/device-sdk-go/internal/mock"
 	"github.com/edgexfoundry/edgex-go/pkg/models"
-	"testing"
 )
 
 // TODO:

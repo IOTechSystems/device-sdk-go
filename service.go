@@ -12,16 +12,16 @@ package device
 
 import (
 	"fmt"
+	"net/http"
+	"strconv"
+	"time"
+
 	"github.com/edgexfoundry/device-sdk-go/internal/cache"
 	"github.com/edgexfoundry/device-sdk-go/internal/clientinit"
 	"github.com/edgexfoundry/device-sdk-go/internal/controller"
 	"github.com/edgexfoundry/device-sdk-go/internal/provision"
 	"github.com/edgexfoundry/device-sdk-go/model"
 	"github.com/edgexfoundry/edgex-go/pkg/clients/types"
-	"net/http"
-	"strconv"
-	"time"
-
 	"github.com/edgexfoundry/device-sdk-go/internal/common"
 	"github.com/edgexfoundry/edgex-go/pkg/models"
 	"gopkg.in/mgo.v2/bson"

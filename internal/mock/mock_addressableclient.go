@@ -1,3 +1,4 @@
+// -*- Mode: Go; indent-tabs-mode: t -*-
 //
 // Copyright (C) 2018 IOTech Ltd
 //
@@ -6,10 +7,11 @@
 package mock
 
 import (
+	"net/http"
+
 	"github.com/edgexfoundry/edgex-go/pkg/clients/types"
 	"github.com/edgexfoundry/edgex-go/pkg/models"
 	"gopkg.in/mgo.v2/bson"
-	"net/http"
 )
 
 type AddressableClientMock struct {

@@ -9,8 +9,9 @@ package cache
 
 import (
 	"fmt"
-	"github.com/edgexfoundry/edgex-go/pkg/models"
 	"sync"
+
+	"github.com/edgexfoundry/edgex-go/pkg/models"
 )
 
 var (
@@ -29,7 +30,7 @@ type DeviceCache interface {
 }
 
 type deviceCache struct {
-	dMap map[string]*models.Device
+	dMap    map[string]*models.Device
 	nameMap map[string]string
 }
 

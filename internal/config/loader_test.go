@@ -9,13 +9,14 @@ package config
 
 import (
 	"fmt"
-	"github.com/edgexfoundry/device-sdk-go/internal/common"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/edgexfoundry/device-sdk-go/internal/common"
 )
 
 func TestCheckConsulUpReturnErrorOnTimeout(t *testing.T) {

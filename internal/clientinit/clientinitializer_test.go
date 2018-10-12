@@ -1,3 +1,4 @@
+// -*- Mode: Go; indent-tabs-mode: t -*-
 //
 // Copyright (C) 2018 IOTech Ltd
 //
@@ -6,10 +7,11 @@
 package clientinit
 
 import (
-	"github.com/edgexfoundry/device-sdk-go/internal/common"
-	"github.com/edgexfoundry/edgex-go/pkg/clients/logging"
 	"net"
 	"testing"
+
+	"github.com/edgexfoundry/device-sdk-go/internal/common"
+	"github.com/edgexfoundry/edgex-go/pkg/clients/logging"
 )
 
 func TestInitializeLoggingClientByFile(test *testing.T) {

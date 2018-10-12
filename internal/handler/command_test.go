@@ -8,19 +8,16 @@ package handler
 
 import (
 	"fmt"
-	"github.com/edgexfoundry/device-sdk-go/internal/common"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
-
 	// TODO: imports commented out till cache objects become interfaces
 	//	"time"
 
-	logger "github.com/edgexfoundry/edgex-go/pkg/clients/logging"
-	//	"github.com/edgexfoundry/edgex-go/core/domain/models"
+	"github.com/edgexfoundry/device-sdk-go/internal/common"
+	"github.com/edgexfoundry/edgex-go/pkg/clients/logging"
 	"github.com/gorilla/mux"
-	//	"gopkg.in/mgo.v2/bson"
 )
 
 const (

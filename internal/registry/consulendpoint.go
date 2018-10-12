@@ -1,3 +1,4 @@
+// -*- Mode: Go; indent-tabs-mode: t -*-
 //
 // Copyright (C) 2018 IOTech Ltd
 //
@@ -7,10 +8,11 @@ package registry
 
 import (
 	"fmt"
-	"github.com/edgexfoundry/edgex-go/pkg/clients/types"
 	"os"
 	"sync"
 	"time"
+
+	"github.com/edgexfoundry/edgex-go/pkg/clients/types"
 )
 
 type ConsulEndpoint struct {

@@ -12,9 +12,10 @@ import (
 	"encoding/base64"
 	"encoding/binary"
 	"fmt"
-	"github.com/edgexfoundry/edgex-go/pkg/models"
 	"io"
 	"strconv"
+
+	"github.com/edgexfoundry/edgex-go/pkg/models"
 )
 
 // ValueType indicates the type of value being passed back
@@ -164,7 +165,7 @@ func NewFloat64Value(ro *models.ResourceOperation, origin int64, value float64) 
 }
 
 //NewCommandValue create a CommandValue according to the Type supplied
-func NewCommandValue(ro *models.ResourceOperation, origin int64, value interface{}, t ValueType) (cv *CommandValue, err error ) {
+func NewCommandValue(ro *models.ResourceOperation, origin int64, value interface{}, t ValueType) (cv *CommandValue, err error) {
 	cv = &CommandValue{RO: ro, Origin: origin, Type: t}
 	err = encodeValue(cv, value)
 	return

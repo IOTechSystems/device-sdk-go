@@ -8,12 +8,12 @@ package device
 
 import (
 	"fmt"
-	"github.com/edgexfoundry/device-sdk-go/internal/common"
 	"io/ioutil"
 	"path/filepath"
 	"strings"
 	"sync"
 
+	"github.com/edgexfoundry/device-sdk-go/internal/common"
 	"github.com/edgexfoundry/edgex-go/pkg/models"
 	"gopkg.in/mgo.v2/bson"
 	"gopkg.in/yaml.v2"

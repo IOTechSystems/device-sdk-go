@@ -12,10 +12,10 @@ const (
 	ClientMetadata = "Metadata"
 	ClientLogging  = "Logging"
 
-	APIPrefix  = "/api/v1"
-	Colon      = ":"
-	HttpScheme = "http://"
-	HttpProto  = "HTTP"
+	APIPrefix      = "/api/v1"
+	Colon          = ":"
+	HttpScheme     = "http://"
+	HttpProto      = "HTTP"
 	StatusResponse = "pong"
 
 	APIAddressableRoute     = APIPrefix + "/addressable"

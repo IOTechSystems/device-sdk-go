@@ -9,12 +9,13 @@ package provision
 
 import (
 	"fmt"
+	"time"
+
 	"github.com/edgexfoundry/device-sdk-go/internal/cache"
 	"github.com/edgexfoundry/device-sdk-go/internal/common"
 	"github.com/edgexfoundry/edgex-go/pkg/clients/types"
 	"github.com/edgexfoundry/edgex-go/pkg/models"
 	"gopkg.in/mgo.v2/bson"
-	"time"
 )
 
 func LoadDevices(deviceList []common.DeviceConfig) error {

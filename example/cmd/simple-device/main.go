@@ -17,4 +17,3 @@ func main() {
 	sd := driver.SimpleDriver{}
 	startup.Bootstrap(&sd)
 }
-

@@ -12,15 +12,15 @@ package driver
 
 import (
 	"fmt"
-	"github.com/edgexfoundry/device-sdk-go/model"
 	"time"
 
-	logger "github.com/edgexfoundry/edgex-go/pkg/clients/logging"
+	"github.com/edgexfoundry/device-sdk-go/model"
+	"github.com/edgexfoundry/edgex-go/pkg/clients/logging"
 	"github.com/edgexfoundry/edgex-go/pkg/models"
 )
 
 type SimpleDriver struct {
-	lc logger.LoggingClient
+	lc      logger.LoggingClient
 	asyncCh chan<- *model.AsyncValues
 }
 

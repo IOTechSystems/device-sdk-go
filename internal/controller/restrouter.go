@@ -8,9 +8,10 @@
 package controller
 
 import (
+	"net/http"
+
 	"github.com/edgexfoundry/device-sdk-go/internal/common"
 	"github.com/gorilla/mux"
-	"net/http"
 )
 
 func InitRestRoutes() *mux.Router {

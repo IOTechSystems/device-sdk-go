@@ -1,3 +1,4 @@
+// -*- Mode: Go; indent-tabs-mode: t -*-
 //
 // Copyright (C) 2018 IOTech Ltd
 //
@@ -7,6 +8,7 @@ package mock
 
 import (
 	"errors"
+
 	"github.com/edgexfoundry/edgex-go/pkg/models"
 )
 

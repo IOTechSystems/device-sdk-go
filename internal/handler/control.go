@@ -8,6 +8,7 @@ package handler
 
 import (
 	"fmt"
+
 	"github.com/edgexfoundry/device-sdk-go/internal/common"
 )
 

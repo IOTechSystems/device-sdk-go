@@ -10,13 +10,14 @@ package controller
 import (
 	"encoding/json"
 	"fmt"
+	"io"
+	"io/ioutil"
+	"net/http"
+
 	"github.com/edgexfoundry/device-sdk-go/internal/common"
 	"github.com/edgexfoundry/device-sdk-go/internal/handler"
 	"github.com/edgexfoundry/edgex-go/pkg/models"
 	"github.com/gorilla/mux"
-	"io"
-	"io/ioutil"
-	"net/http"
 )
 
 func statusFunc(w http.ResponseWriter, req *http.Request) {

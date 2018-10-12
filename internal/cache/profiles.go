@@ -9,9 +9,10 @@ package cache
 
 import (
 	"fmt"
-	"github.com/edgexfoundry/edgex-go/pkg/models"
 	"strings"
 	"sync"
+
+	"github.com/edgexfoundry/edgex-go/pkg/models"
 )
 
 var (

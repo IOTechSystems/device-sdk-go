@@ -8,11 +8,12 @@ package transformer
 
 import (
 	"fmt"
+	"math"
+	"strconv"
+
 	"github.com/edgexfoundry/device-sdk-go/internal/common"
 	"github.com/edgexfoundry/device-sdk-go/model"
 	"github.com/edgexfoundry/edgex-go/pkg/models"
-	"math"
-	"strconv"
 )
 
 func TransformPutParameter(cv *model.CommandValue, pv models.PropertyValue) error {
@@ -49,7 +50,7 @@ func transformPutBase(cv *model.CommandValue, base string) error {
 		return err
 	}
 
-	v = math.Log (v) / math.Log (b)
+	v = math.Log(v) / math.Log(b)
 	err = replaceCommandValueFromFloat64(cv, v)
 	return err
 }

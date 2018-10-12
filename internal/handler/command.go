@@ -10,15 +10,15 @@ package handler
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/edgexfoundry/device-sdk-go/internal/cache"
-	"github.com/edgexfoundry/device-sdk-go/internal/common"
-	"github.com/edgexfoundry/device-sdk-go/internal/transformer"
-	"github.com/edgexfoundry/device-sdk-go/model"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
 
+	"github.com/edgexfoundry/device-sdk-go/internal/cache"
+	"github.com/edgexfoundry/device-sdk-go/internal/common"
+	"github.com/edgexfoundry/device-sdk-go/internal/transformer"
+	"github.com/edgexfoundry/device-sdk-go/model"
 	"github.com/edgexfoundry/edgex-go/pkg/models"
 )
 
@@ -328,7 +328,7 @@ func createCommandValueForParam(ro *models.ResourceOperation, v string) (*model.
 		value, err = strconv.ParseInt(v, 10, 64)
 		t = model.Int64
 	case "float32":
-		value, err = strconv.ParseFloat(v,32)
+		value, err = strconv.ParseFloat(v, 32)
 		t = model.Float32
 	case "float64":
 		value, err = strconv.ParseFloat(v, 64)
@@ -352,9 +352,10 @@ func CommandAllHandler(cmd string, body string, method string) ([]*models.Event,
 	devCount := len(devices)
 	var waitGroup sync.WaitGroup
 	waitGroup.Add(devCount)
-	cmdResults := make(chan struct{
-		event *models.Event
-		appErr common.AppError}, devCount)
+	cmdResults := make(chan struct {
+		event  *models.Event
+		appErr common.AppError
+	}, devCount)
 
 	for i, _ := range devices {
 		go func() {
@@ -366,20 +367,21 @@ func CommandAllHandler(cmd string, body string, method string) ([]*models.Event,
 			} else {
 				appErr = execPutCmd(devices[i], cmd, body)
 			}
-			cmdResults <- struct{
-				event *models.Event
-				appErr common.AppError} {event, appErr}
-		} ()
+			cmdResults <- struct {
+				event  *models.Event
+				appErr common.AppError
+			}{event, appErr}
+		}()
 	}
 	waitGroup.Wait()
 	close(cmdResults)
 
 	errCount := 0
-	getResults := make([]*models.Event, 0 , devCount)
+	getResults := make([]*models.Event, 0, devCount)
 	var appErr common.AppError
 	for r := range cmdResults {
 		if r.appErr != nil {
-			errCount ++
+			errCount++
 			common.LogCli.Error("Handler - CommandAll: " + r.appErr.Message())
 			appErr = r.appErr // only the last error will be returned
 		} else if r.event != nil {
@@ -394,11 +396,10 @@ func CommandAllHandler(cmd string, body string, method string) ([]*models.Event,
 
 	return getResults, appErr
 
-
 }
 
 func filterOperationalDevices(devices []models.Device) []*models.Device {
-	result := make([]*models.Device, 0 , len(devices))
+	result := make([]*models.Device, 0, len(devices))
 	for i, d := range devices {
 		if (d.AdminState == models.Locked) || (d.OperatingState == models.Disabled) {
 			continue

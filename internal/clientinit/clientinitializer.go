@@ -1,3 +1,4 @@
+// -*- Mode: Go; indent-tabs-mode: t -*-
 //
 // Copyright (C) 2018 IOTech Ltd
 //
@@ -7,6 +8,12 @@ package clientinit
 
 import (
 	"fmt"
+	"net"
+	"net/http"
+	"strconv"
+	"sync"
+	"time"
+
 	"github.com/edgexfoundry/device-sdk-go/internal/common"
 	"github.com/edgexfoundry/device-sdk-go/internal/config"
 	"github.com/edgexfoundry/device-sdk-go/internal/registry"
@@ -15,11 +22,6 @@ import (
 	"github.com/edgexfoundry/edgex-go/pkg/clients/metadata"
 	"github.com/edgexfoundry/edgex-go/pkg/clients/types"
 	consulapi "github.com/hashicorp/consul/api"
-	"net"
-	"net/http"
-	"strconv"
-	"sync"
-	"time"
 )
 
 // initDependencyClients
