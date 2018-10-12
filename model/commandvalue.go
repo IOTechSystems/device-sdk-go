@@ -12,7 +12,6 @@ import (
 	"encoding/base64"
 	"encoding/binary"
 	"fmt"
-	"github.com/edgexfoundry/device-sdk-go/internal/common"
 	"github.com/edgexfoundry/edgex-go/pkg/models"
 	"io"
 	"strconv"
@@ -174,9 +173,7 @@ func NewCommandValue(ro *models.ResourceOperation, origin int64, value interface
 func encodeValue(cv *CommandValue, value interface{}) error {
 	buf := new(bytes.Buffer)
 	err := binary.Write(buf, binary.BigEndian, value)
-	if err != nil {
-		common.LogCli.Error(fmt.Sprintf("binary.Write failed: %v", err))
-	} else {
+	if err == nil {
 		cv.NumericValue = buf.Bytes()
 	}
 	return err
@@ -184,9 +181,6 @@ func encodeValue(cv *CommandValue, value interface{}) error {
 
 func decodeValue(reader io.Reader, value interface{}) error {
 	err := binary.Read(reader, binary.BigEndian, value)
-	if err != nil {
-		common.LogCli.Error(fmt.Sprintf("binary.Read failed: %v", err))
-	}
 	return err
 }
 
