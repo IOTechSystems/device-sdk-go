@@ -25,7 +25,7 @@ type ProfileCache interface {
 	All() []models.DeviceProfile
 	Add(profile models.DeviceProfile) error
 	Update(profile models.DeviceProfile) error
-	Remove(name string) error
+	RemoveByName(name string) error
 	DeviceObject(profileName string, objectName string) (models.DeviceObject, bool)
 	CommandExists(prfName string, cmd string) (bool, error)
 	ResourceOperations(prfName string, cmd string, method string) ([]models.ResourceOperation, error)
@@ -104,7 +104,7 @@ func (p *profileCache) Update(profile models.DeviceProfile) error {
 	return nil
 }
 
-func (p *profileCache) Remove(name string) error {
+func (p *profileCache) RemoveByName(name string) error {
 	_, ok := p.dpMap[name]
 	if !ok {
 		return fmt.Errorf("device profile %s does not exist in cache", name)

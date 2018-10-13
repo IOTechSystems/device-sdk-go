@@ -18,6 +18,7 @@ var (
 	initOnce sync.Once
 )
 
+// Init basic state for cache
 func InitCache() {
 	initOnce.Do(func() {
 		vds, err := common.ValDescCli.ValueDescriptors()

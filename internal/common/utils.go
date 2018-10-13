@@ -13,7 +13,9 @@ import (
 	"time"
 
 	"github.com/edgexfoundry/device-sdk-go/model"
+	"github.com/edgexfoundry/edgex-go/pkg/clients/types"
 	"github.com/edgexfoundry/edgex-go/pkg/models"
+	"gopkg.in/mgo.v2/bson"
 )
 
 func BuildAddr(host string, port string) string {
@@ -46,4 +48,199 @@ func SendEvent(event *models.Event) {
 	if err != nil {
 		LogCli.Error(fmt.Sprintf("Failed to push event for device %s: %s", event.Device, err))
 	}
+}
+
+// FIXME: !threadsafe - none of the compare methods are threadsafe
+// as other code can access the struct instances and potentially
+// modify them while they're being compared.
+func CompareCommands(a []models.Command, b []models.Command) bool {
+	if len(a) != len(b) {
+		return false
+	}
+
+	for i := range a {
+		if a[i] != b[i] {
+			return false
+		}
+	}
+
+	return true
+}
+
+func CompareDevices(a models.Device, b models.Device) bool {
+	labelsOk := CompareStrings(a.Labels, b.Labels)
+	profileOk := CompareDeviceProfiles(a.Profile, b.Profile)
+	serviceOk := CompareDeviceServices(a.Service, b.Service)
+
+	return a.Addressable == b.Addressable &&
+		a.AdminState == b.AdminState &&
+		a.Description == b.Description &&
+		a.Id == b.Id &&
+		a.Location == b.Location &&
+		a.Name == b.Name &&
+		a.OperatingState == b.OperatingState &&
+		labelsOk &&
+		profileOk &&
+		serviceOk
+}
+
+func CompareDeviceProfiles(a models.DeviceProfile, b models.DeviceProfile) bool {
+	labelsOk := CompareStrings(a.Labels, b.Labels)
+	cmdsOk := CompareCommands(a.Commands, b.Commands)
+	devResourcesOk := CompareDeviceResources(a.DeviceResources, b.DeviceResources)
+	resourcesOk := CompareResources(a.Resources, b.Resources)
+
+	// TODO: Objects fields aren't compared as to do properly
+	// requires introspection as Obects is a slice of interface{}
+
+	return a.DescribedObject == b.DescribedObject &&
+		a.Id == b.Id &&
+		a.Name == b.Name &&
+		a.Manufacturer == b.Manufacturer &&
+		a.Model == b.Model &&
+		labelsOk &&
+		cmdsOk &&
+		devResourcesOk &&
+		resourcesOk
+}
+
+func CompareDeviceResources(a []models.DeviceObject, b []models.DeviceObject) bool {
+	if len(a) != len(b) {
+		return false
+	}
+
+	for i := range a {
+		// TODO: Attributes aren't compared, as to do properly
+		// requires introspection as Attributes is an interface{}
+
+		if a[i].Description != b[i].Description ||
+			a[i].Name != b[i].Name ||
+			a[i].Tag != b[i].Tag ||
+			a[i].Properties != b[i].Properties {
+			return false
+		}
+	}
+
+	return true
+}
+
+func CompareDeviceServices(a models.DeviceService, b models.DeviceService) bool {
+	serviceOk := CompareServices(a.Service, b.Service)
+	return a.AdminState == b.AdminState && serviceOk
+}
+
+func CompareResources(a []models.ProfileResource, b []models.ProfileResource) bool {
+	if len(a) != len(b) {
+		return false
+	}
+
+	for i := range a {
+		getOk := CompareResourceOperations(a[i].Get, b[i].Set)
+		setOk := CompareResourceOperations(a[i].Get, b[i].Set)
+
+		if a[i].Name != b[i].Name && !getOk && !setOk {
+			return false
+		}
+	}
+
+	return true
+}
+
+func CompareResourceOperations(a []models.ResourceOperation, b []models.ResourceOperation) bool {
+	if len(a) != len(b) {
+		return false
+	}
+
+	for i := range a {
+		secondaryOk := CompareStrings(a[i].Secondary, b[i].Secondary)
+		mappingsOk := CompareStrStrMap(a[i].Mappings, b[i].Mappings)
+
+		if a[i].Index != b[i].Index ||
+			a[i].Operation != b[i].Operation ||
+			a[i].Object != b[i].Object ||
+			a[i].Property != b[i].Property ||
+			a[i].Parameter != b[i].Parameter ||
+			a[i].Resource != b[i].Resource ||
+			!secondaryOk ||
+			!mappingsOk {
+			return false
+		}
+	}
+
+	return true
+}
+
+func CompareServices(a models.Service, b models.Service) bool {
+
+	labelsOk := CompareStrings(a.Labels, b.Labels)
+
+	return a.DescribedObject == b.DescribedObject &&
+		a.Id == b.Id &&
+		a.Name == b.Name &&
+		a.LastConnected == b.LastConnected &&
+		a.LastReported == b.LastReported &&
+		a.OperatingState == b.OperatingState &&
+		a.Addressable == b.Addressable &&
+		labelsOk
+}
+
+func CompareStrings(a []string, b []string) bool {
+	if len(a) != len(b) {
+		return false
+	}
+
+	for i := range a {
+		if a[i] != b[i] {
+			return false
+		}
+	}
+
+	return true
+}
+
+func CompareStrStrMap(a map[string]string, b map[string]string) bool {
+	if len(a) != len(b) {
+		return false
+	}
+
+	for k, av := range a {
+		if bv, ok := b[k]; !ok || av != bv {
+			return false
+		}
+	}
+
+	return true
+}
+
+func MakeAddressable(name string, addr *models.Addressable) (*models.Addressable, error) {
+	// check whether there has been an existing addressable
+	addressable, err := AddrCli.AddressableForName(name)
+	if err != nil {
+		if errsc, ok := err.(*types.ErrServiceClient); ok && errsc.StatusCode == 404 {
+			LogCli.Debug(fmt.Sprintf("Addressable %s doesn't exist, creating a new one", addr.Name))
+			millis := time.Now().UnixNano() / int64(time.Millisecond)
+			addressable = *addr
+			addressable.Name = name
+			addressable.Origin = millis
+			LogCli.Debug(fmt.Sprintf("Adding Addressable: %v", addressable))
+			id, err := AddrCli.Add(&addressable)
+			if err != nil {
+				LogCli.Error(fmt.Sprintf("Add Addressable failed %v, error: %v", addr, err))
+				return nil, err
+			}
+			if len(id) != 24 || !bson.IsObjectIdHex(id) {
+				errMsg := "Add Addressable returned invalid Id: " + id
+				LogCli.Error(errMsg)
+				return nil, fmt.Errorf(errMsg)
+			}
+			addressable.Id = bson.ObjectIdHex(id)
+		} else {
+			LogCli.Error(fmt.Sprintf("AddressableForName failed: %v", err))
+			return nil, err
+		}
+	} else {
+		LogCli.Debug(fmt.Sprintf("Addressable %s exists, using the existing one", addressable.Name))
+	}
+
+	return &addressable, nil
 }

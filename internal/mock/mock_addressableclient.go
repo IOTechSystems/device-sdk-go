@@ -17,6 +17,10 @@ import (
 type AddressableClientMock struct {
 }
 
+func (AddressableClientMock) Addressable(id string) (models.Addressable, error) {
+	panic("implement me")
+}
+
 func (AddressableClientMock) Add(addr *models.Addressable) (string, error) {
 	return "5b977c62f37ba10e36673802", nil
 }

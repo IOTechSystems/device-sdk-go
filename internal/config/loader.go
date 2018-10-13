@@ -40,16 +40,14 @@ var (
 func LoadConfig(useRegistry bool, profile string, confDir string) (config *common.Config, err error) {
 	fmt.Fprintf(os.Stdout, "Init: useRegistry: %v profile: %s confDir: %s\n",
 		useRegistry, profile, confDir)
-	var confName string
+	confName := "configuration.toml"
 
 	if len(confDir) == 0 {
 		confDir = "./res"
 	}
 
 	if len(profile) > 0 {
-		confName = "configuration-" + profile + ".toml"
-	} else {
-		confName = "configuration.toml"
+		confDir = confDir + "/" + profile
 	}
 
 	path := confDir + "/" + confName

@@ -1,0 +1,127 @@
+[Service]
+Host = "localhost"
+Port = 49990
+ConnectRetries = 3
+HealthCheck = "/api/v1/ping"
+Labels = []
+OpenMsg = "device simple started"
+ReadMaxLimit = 256
+Timeout = 5000
+Name = "device-simple"
+Version = "0.1"
+
+[Registry]
+Host = "localhost"
+Port = 8500
+CheckInterval = "10s"
+FailLimit = 3
+FailWaitTime = 10
+
+[Clients]
+  [Clients.Data]
+  Name = "edgex-core-data"
+  Protocol = "http"
+  Host = "localhost"
+  Port = 48080
+  Timeout = 50000
+
+  [Clients.Metadata]
+  Name = "edgex-core-metadata"
+  Protocol = "http"
+  Host = "localhost"
+  Port = 48081
+  Timeout = 50000
+
+  [Clients.Logging]
+  Name = "edgex-support-logging"
+  Protocol = "http"
+  Host = "localhost"
+  Port = 48061
+
+[Device]
+  DataTransform = true
+  InitCmd = ""
+  InitCmdArgs = ""
+  MaxCmdOps = 128
+  MaxCmdValueLen = 256
+  RemoveCmd = ""
+  RemoveCmdArgs = ""
+  ProfilesDir = "./res"
+  SendReadingsOnChanged = true
+
+[Logging]
+EnableRemote = false
+File = "./device-simple.log"
+
+# Pre-define Schedule Configuration
+[[Schedules]]
+Name = "10sec-schedule"
+Frequency = "PT10S"
+
+[[ScheduleEvents]]
+Name = "readTemperature"
+Schedule = "10sec-schedule"
+  [ScheduleEvents.Addressable]
+  Method = "GET"
+  Path = "/api/v1/device/name/JC.RR5.NAE9.ConfRoom.Padre.Island/temperature"
+
+[[ScheduleEvents]]
+Name = "readHumidity"
+Schedule = "10sec-schedule"
+  [ScheduleEvents.Addressable]
+  Method = "GET"
+  Path = "/api/v1/device/name/JC.RR5.NAE9.ConfRoom.Padre.Island/humidity"
+
+# trigger schedule by support-scheduler
+[[ScheduleEvents]]
+Name = "readTemperature"
+Schedule = "10sec-schedule"
+Service="edgex-support-scheduler"
+  [ScheduleEvents.Addressable]
+  Protocol = "HTTP"
+  Method = "GET"
+  Address = "edgex-device-simple"
+  Port = 49991
+  Path = "/api/v1/device/name/JC.RR5.NAE9.ConfRoom.Padre.Island/temperature"
+
+[[Schedules]]
+Name = "5sec-schedule"
+Frequency = "PT5S"
+
+[[ScheduleEvents]]
+Name = "readVoltage"
+Schedule = "5sec-schedule"
+  [ScheduleEvents.Addressable]
+  Method = "GET"
+  Path = "/api/v1/device/name/GS1-AC-Drive/voltage"
+
+# Pre-define Devices
+[[DeviceList]]
+  Name = "JC.RR5.NAE9.ConfRoom.Padre.Island01"
+  Profile = "JC.RR5.NAE9.ConfRoom.Padre.Island"
+  Description = "US RR5-2 Padre Island Conference Room"
+  Labels = [ "thermostat", "industrial" ]
+  [DeviceList.Addressable]
+    Address = "bacnet01"
+    Port = 300
+    Protocol = "OTHER"
+
+[[DeviceList]]
+  Name = "KMC.BAC-121036CE01"
+  Profile = "KMC.BAC-121036CE"
+  Description = "KMC BAC-121036CE BACnet thermostat"
+  Labels = [ "thermostat", "industrial" ]
+  [DeviceList.Addressable]
+    Address = "bacnet02"
+    Port = 300
+    Protocol = "OTHER"
+
+[[DeviceList]]
+  Name = "GS1-AC-Drive01"
+  Profile = "GS1-AC-Drive"
+  Description = "GS1 AC Drive"
+  Labels = [ "modbus", "industrial" ]
+  [DeviceList.Addressable]
+    Address = "modbus01"
+    Port = 503
+    Protocol = "TCP"

@@ -213,15 +213,9 @@ func makeNewAddressable() (*models.Addressable, error) {
 
 // Stop shuts down the Service
 func (s *Service) Stop(force bool) error {
-
 	s.stopped = true
 	common.Driver.Stop(force)
 	return nil
-}
-
-// AddDevice adds a new device to the device service.
-func (s *Service) AddDevice(dev models.Device) error {
-	return dc.Add(&dev)
 }
 
 // NewService create a new device service instance with the given
@@ -249,4 +243,9 @@ func NewService(proto model.ProtocolDriver) (*Service, error) {
 	common.Driver = proto
 
 	return svc, nil
+}
+
+// RunningService returns the Service instance which is running
+func RunningService() *Service {
+	return svc
 }

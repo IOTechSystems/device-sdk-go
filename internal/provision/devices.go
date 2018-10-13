@@ -13,7 +13,6 @@ import (
 
 	"github.com/edgexfoundry/device-sdk-go/internal/cache"
 	"github.com/edgexfoundry/device-sdk-go/internal/common"
-	"github.com/edgexfoundry/edgex-go/pkg/clients/types"
 	"github.com/edgexfoundry/edgex-go/pkg/models"
 	"gopkg.in/mgo.v2/bson"
 )
@@ -43,7 +42,7 @@ func createDevice(dc common.DeviceConfig) error {
 		return fmt.Errorf(errMsg)
 	}
 
-	addr, err := makeAddressable(dc.Name, &dc.Addressable)
+	addr, err := common.MakeAddressable(dc.Name, &dc.Addressable)
 	if err != nil {
 		common.LogCli.Error(fmt.Sprintf("makeAddressable failed: %v", err))
 		return err
@@ -76,37 +75,4 @@ func createDevice(dc common.DeviceConfig) error {
 	cache.Devices().Add(*device)
 
 	return nil
-}
-
-func makeAddressable(name string, addr *models.Addressable) (*models.Addressable, error) {
-	// check whether there has been an existing addressable
-	addressable, err := common.AddrCli.AddressableForName(addr.Name)
-	if err != nil {
-		if errsc, ok := err.(*types.ErrServiceClient); ok && errsc.StatusCode == 404 {
-			common.LogCli.Debug(fmt.Sprintf("Addressable %s doesn't exist, creating a new one", addr.Name))
-			millis := time.Now().UnixNano() / int64(time.Millisecond)
-			addressable = *addr
-			addressable.Name = name
-			addressable.Origin = millis
-			common.LogCli.Debug(fmt.Sprintf("Adding Addressable: %v", addressable))
-			id, err := common.AddrCli.Add(&addressable)
-			if err != nil {
-				common.LogCli.Error(fmt.Sprintf("Add Addressable failed %v, error: %v", addr, err))
-				return nil, err
-			}
-			if len(id) != 24 || !bson.IsObjectIdHex(id) {
-				errMsg := "Add Addressable returned invalid Id: " + id
-				common.LogCli.Error(errMsg)
-				return nil, fmt.Errorf(errMsg)
-			}
-			addressable.Id = bson.ObjectIdHex(id)
-		} else {
-			common.LogCli.Error(fmt.Sprintf("AddressableForName failed: %v", err))
-			return nil, err
-		}
-	} else {
-		common.LogCli.Debug(fmt.Sprintf("Addressable %s exists, using the existing one", addressable.Name))
-	}
-
-	return &addressable, nil
 }

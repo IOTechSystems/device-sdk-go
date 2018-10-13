@@ -25,7 +25,8 @@ type DeviceCache interface {
 	All() []models.Device
 	Add(device models.Device) error
 	Update(device models.Device) error
-	Remove(name string) error
+	Remove(id string) error
+	RemoveByName(name string) error
 	UpdateAdminState(id string, state models.AdminState) error
 }
 
@@ -34,22 +35,24 @@ type deviceCache struct {
 	nameMap map[string]string
 }
 
+// ForName returns a Device with the given name.
 func (d *deviceCache) ForName(name string) (models.Device, bool) {
 	dp, ok := d.dMap[name]
 	return *dp, ok
 }
 
 // ForId returns a device with the given device id.
-func (d *deviceCache) ForId(id string) *models.Device {
+func (d *deviceCache) ForId(id string) (models.Device, bool) {
 	name, ok := d.nameMap[id]
 	if !ok {
-		return nil
+		return models.Device{}, ok
 	}
 
 	dev := d.dMap[name]
-	return dev
+	return *dev, ok
 }
 
+// All() returns the current list of devices in the cache.
 func (d *deviceCache) All() []models.Device {
 	ds := make([]models.Device, len(d.dMap))
 	i := 0
@@ -60,29 +63,52 @@ func (d *deviceCache) All() []models.Device {
 	return ds
 }
 
+// Adds a new device to the cache. This method is used to populate the
+// devices cache with pre-existing devices from Core Metadata, as well
+// as create new devices returned in a ScanList during discovery.
 func (d *deviceCache) Add(device models.Device) error {
 	_, ok := d.dMap[device.Name]
 	if ok {
 		return fmt.Errorf("device %s has already existed in cache", device.Name)
 	}
 	d.dMap[device.Name] = &device
+	d.nameMap[device.Id.Hex()] = device.Name
 	return nil
 }
 
+// Update updates the device in the cache
 func (d *deviceCache) Update(device models.Device) error {
-	_, ok := d.dMap[device.Name]
+	name, ok := d.nameMap[device.Id.Hex()]
+	if !ok {
+		return fmt.Errorf("device %s does not exist in cache", device.Id.Hex())
+	}
+	_, ok = d.dMap[name]
 	if !ok {
 		return fmt.Errorf("device %s does not exist in cache", device.Name)
 	}
+
 	d.dMap[device.Name] = &device
+	d.nameMap[device.Id.Hex()] = device.Name
 	return nil
 }
 
-func (d *deviceCache) Remove(name string) error {
-	_, ok := d.dMap[name]
+// Remove removes the specified device by id from the cache.
+func (d *deviceCache) Remove(id string) error {
+	name, ok := d.nameMap[id]
+	if !ok {
+		return fmt.Errorf("device %s does not exist in cache", id)
+	}
+
+	return d.RemoveByName(name)
+}
+
+// RemoveByName removes the specified device by name from the cache.
+func (d *deviceCache) RemoveByName(name string) error {
+	device, ok := d.dMap[name]
 	if !ok {
 		return fmt.Errorf("device %s does not exist in cache", name)
 	}
+	delete(d.nameMap, device.Name)
 	delete(d.dMap, name)
 	return nil
 }
