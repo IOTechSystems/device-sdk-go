@@ -21,7 +21,8 @@ import (
 	"gopkg.in/mgo.v2/bson"
 )
 
-// AddDevice adds a new device to the device service. Returns new device id or non-nil error.
+// AddDevice adds a new Device to the device service and Core Metadata
+// Returns new Device id or non-nil error.
 func (s *Service) AddDevice(device models.Device) (id string, err error) {
 	if d, ok := cache.Devices().ForName(device.Name); ok {
 		return d.Id.Hex(), fmt.Errorf("name conflicted, Device %s exists", device.Name)
@@ -70,7 +71,7 @@ func (s *Service) Devices() []models.Device {
 	return cache.Devices().All()
 }
 
-// RemoveDevice removes the specified device by id from the cache and ensures that the
+// RemoveDevice removes the specified Device by id from the cache and ensures that the
 // instance in Core Metadata is also removed.
 func (s *Service) RemoveDevice(id string) error {
 	device, ok := cache.Devices().ForId(id)
@@ -91,7 +92,7 @@ func (s *Service) RemoveDevice(id string) error {
 	return err
 }
 
-// RemoveDevice removes the specified device by name from the cache and ensures that the
+// RemoveDevice removes the specified Device by name from the cache and ensures that the
 // instance in Core Metadata is also removed.
 func (s *Service) RemoveDeviceByName(name string) error {
 	device, ok := cache.Devices().ForName(name)
@@ -112,7 +113,7 @@ func (s *Service) RemoveDeviceByName(name string) error {
 	return err
 }
 
-// UpdateDevice updates the device in the cache and ensures that the
+// UpdateDevice updates the Device in the cache and ensures that the
 // copy in Core Metadata is also updated.
 func (s *Service) UpdateDevice(device models.Device) error {
 	_, ok := cache.Devices().ForId(device.Id.Hex())

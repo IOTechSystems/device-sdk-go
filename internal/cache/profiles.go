@@ -31,6 +31,7 @@ type ProfileCache interface {
 	DeviceObject(profileName string, objectName string) (models.DeviceObject, bool)
 	CommandExists(prfName string, cmd string) (bool, error)
 	ResourceOperations(prfName string, cmd string, method string) ([]models.ResourceOperation, error)
+	ResourceOperation(prfName string, object string, method string) (models.ResourceOperation, error)
 }
 
 type profileCache struct {
@@ -175,32 +176,57 @@ func (p *profileCache) CommandExists(prfName string, cmd string) (bool, error) {
 	return true, nil
 }
 
-// GetResourceOperation...
+// Get ResourceOperations
 func (p *profileCache) ResourceOperations(prfName string, cmd string, method string) ([]models.ResourceOperation, error) {
 	var resOps []models.ResourceOperation
+	var rosMap map[string][]models.ResourceOperation
+	var ok bool
 	if strings.ToLower(method) == "get" {
-		prs, ok := p.getOpMap[prfName]
-		if !ok {
+		if rosMap, ok = p.getOpMap[prfName]; !ok {
 			return nil, fmt.Errorf("profiles: ResourceOperations: specified profile: %s not found", prfName)
-		}
-
-		resOps, ok = prs[cmd]
-		if !ok {
-			return nil, fmt.Errorf("profiles: ResourceOperations: specified cmd: %s not found", cmd)
 		}
 	} else {
-		prs, ok := p.setOpMap[prfName]
-		if !ok {
+		if rosMap, ok = p.setOpMap[prfName]; !ok {
 			return nil, fmt.Errorf("profiles: ResourceOperations: specified profile: %s not found", prfName)
-		}
-
-		resOps, ok = prs[cmd]
-		if !ok {
-			return nil, fmt.Errorf("profiles: ResourceOperations: specified cmd: %s not found", cmd)
 		}
 	}
 
+	if resOps, ok = rosMap[cmd]; !ok {
+		return nil, fmt.Errorf("profiles: ResourceOperations: specified cmd: %s not found", cmd)
+	}
 	return resOps, nil
+}
+
+// Return the first matched ResourceOperation
+func (p *profileCache) ResourceOperation(prfName string, object string, method string) (models.ResourceOperation, error) {
+	var ro models.ResourceOperation
+	var rosMap map[string][]models.ResourceOperation
+	var ok bool
+	if strings.ToLower(method) == "get" {
+		if rosMap, ok = p.getOpMap[prfName]; !ok {
+			return ro, fmt.Errorf("profiles: ResourceOperation: specified profile: %s not found", prfName)
+		}
+	} else {
+		if rosMap, ok = p.setOpMap[prfName]; !ok {
+			return ro, fmt.Errorf("profiles: ResourceOperations: specified profile: %s not found", prfName)
+		}
+	}
+
+	if ro, ok = retrieveFirstRObyObject(rosMap, object); !ok {
+		return ro, fmt.Errorf("profiles: specified ResourceOperation by object %s not found", object)
+	}
+	return ro, nil
+}
+
+func retrieveFirstRObyObject(rosMap map[string][]models.ResourceOperation, object string) (models.ResourceOperation, bool) {
+	for _, ros := range rosMap {
+		for _, ro := range ros {
+			if ro.Object == object {
+				return ro, true
+			}
+		}
+	}
+	return models.ResourceOperation{}, false
 }
 
 func newProfileCache(profiles []models.DeviceProfile) ProfileCache {

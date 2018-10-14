@@ -17,6 +17,8 @@ import (
 	"gopkg.in/mgo.v2/bson"
 )
 
+// AddDeviceProfile adds a new DeviceProfile to the device service and Core Metadata
+// Returns new DeviceProfile id or non-nil error.
 func (s *Service) AddDeviceProfile(profile models.DeviceProfile) (id string, err error) {
 	if p, ok := cache.Profiles().ForName(profile.Name); ok {
 		return p.Id.Hex(), fmt.Errorf("name conflicted, Profile %s exists", profile.Name)
@@ -43,10 +45,13 @@ func (s *Service) AddDeviceProfile(profile models.DeviceProfile) (id string, err
 	return id, nil
 }
 
+// DeviceProfiles return all managed DeviceProfiles from cache
 func (s *Service) DeviceProfiles() []models.DeviceProfile {
 	return cache.Profiles().All()
 }
 
+// RemoveDeviceProfile removes the specified DeviceProfile by id from the cache and ensures that the
+// instance in Core Metadata is also removed.
 func (s *Service) RemoveDeviceProfile(id string) error {
 	profile, ok := cache.Profiles().ForId(id)
 	if !ok {
@@ -66,6 +71,8 @@ func (s *Service) RemoveDeviceProfile(id string) error {
 	return err
 }
 
+// RemoveDeviceProfileByName removes the specified DeviceProfile by name from the cache and ensures that the
+// instance in Core Metadata is also removed.
 func (*Service) RemoveDeviceProfileByName(name string) error {
 	profile, ok := cache.Profiles().ForName(name)
 	if !ok {
@@ -85,6 +92,8 @@ func (*Service) RemoveDeviceProfileByName(name string) error {
 	return err
 }
 
+// UpdateDeviceProfile updates the DeviceProfile in the cache and ensures that the
+// copy in Core Metadata is also updated.
 func (*Service) UpdateDeviceProfile(profile models.DeviceProfile) error {
 	_, ok := cache.Profiles().ForId(profile.Id.Hex())
 	if !ok {
@@ -102,4 +111,35 @@ func (*Service) UpdateDeviceProfile(profile models.DeviceProfile) error {
 
 	err = cache.Profiles().Update(profile)
 	return err
+}
+
+// ResourceOperation retrieves the first matched ResourceOpereation instance from cache according to
+// the Device name, Device resource (object) name, and the method (get or set)
+func (*Service) ResourceOperation(deviceName string, object string, method string) (models.ResourceOperation, bool) {
+	device, ok := cache.Devices().ForName(deviceName)
+	if !ok {
+		common.LogCli.Error(fmt.Sprintf("retrieving ResourceOperation - Device %s not found", deviceName))
+	}
+
+	ro, err := cache.Profiles().ResourceOperation(device.Profile.Name, object, method)
+	if err != nil {
+		common.LogCli.Error(err.Error())
+		return ro, false
+	}
+	return ro, true
+}
+
+// DeviceObject retrieves the specific DeviceObject instance from cache according to
+// the Device name and Device resource (object) name
+func (*Service) DeviceObject(deviceName string, object string, method string) (models.DeviceObject, bool) {
+	device, ok := cache.Devices().ForName(deviceName)
+	if !ok {
+		common.LogCli.Error(fmt.Sprintf("retrieving DeviceObject - Device %s not found", deviceName))
+	}
+
+	do, ok := cache.Profiles().DeviceObject(device.Profile.Name, object)
+	if !ok {
+		return do, false
+	}
+	return do, true
 }
