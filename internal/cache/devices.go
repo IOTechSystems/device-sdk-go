@@ -31,8 +31,8 @@ type DeviceCache interface {
 }
 
 type deviceCache struct {
-	dMap    map[string]*models.Device  //in dMap, key is Device name, and value is Device instance reference
-	nameMap map[string]string  //in nameMap, key is id, and value is Device name
+	dMap    map[string]*models.Device //in dMap, key is Device name, and value is Device instance reference
+	nameMap map[string]string         //in nameMap, key is id, and value is Device name
 }
 
 // ForName returns a Device with the given name.
@@ -87,7 +87,7 @@ func (d *deviceCache) Update(device models.Device) error {
 		return fmt.Errorf("device %s does not exist in cache", device.Name)
 	}
 
-	delete(d.dMap, name)  // delete first because the name might be changed
+	delete(d.dMap, name) // delete first because the name might be changed
 	d.dMap[device.Name] = &device
 	d.nameMap[device.Id.Hex()] = device.Name
 	return nil

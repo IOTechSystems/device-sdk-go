@@ -53,4 +53,3 @@ func (ValueDescriptorMock) Delete(id string) error {
 func (ValueDescriptorMock) DeleteByName(name string) error {
 	panic("implement me")
 }
-

@@ -34,8 +34,8 @@ type ProfileCache interface {
 }
 
 type profileCache struct {
-	dpMap    map[string]models.DeviceProfile  //in dpMap, key is Device name, and value is DeviceProfile instance
-	nameMap  map[string]string    //in nameMap, key is id, and value is DeviceProfile name
+	dpMap    map[string]models.DeviceProfile //in dpMap, key is Device name, and value is DeviceProfile instance
+	nameMap  map[string]string               //in nameMap, key is id, and value is DeviceProfile name
 	doMap    map[string]map[string]models.DeviceObject
 	getOpMap map[string]map[string][]models.ResourceOperation
 	setOpMap map[string]map[string][]models.ResourceOperation
@@ -116,7 +116,7 @@ func (p *profileCache) Update(profile models.DeviceProfile) error {
 		return fmt.Errorf("device profile %s does not exist in cache", profile.Name)
 	}
 
-	delete(p.dpMap, name)  // delete first because the name might be changed
+	delete(p.dpMap, name) // delete first because the name might be changed
 	p.dpMap[profile.Name] = profile
 	p.nameMap[profile.Id.Hex()] = profile.Name
 	p.doMap[profile.Name] = deviceObjectSliceToMap(profile.DeviceResources)
