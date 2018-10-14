@@ -1,22 +1,23 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
 //
 // Copyright (C) 2017-2018 Canonical Ltd
+// Copyright (C) 2018 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
-package handler
+package controller
 
 import (
+	"bytes"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
-	// TODO: imports commented out till cache objects become interfaces
-	//	"time"
 
 	"github.com/edgexfoundry/device-sdk-go/internal/common"
-	"github.com/edgexfoundry/edgex-go/pkg/clients/logging"
+	"github.com/edgexfoundry/device-sdk-go/internal/mock"
+	logger "github.com/edgexfoundry/edgex-go/pkg/clients/logging"
 	"github.com/gorilla/mux"
 )
 
@@ -26,19 +27,56 @@ const (
 	testCmd           = "TestCmd"
 )
 
+// Test callback REST calls
+func TestCallback(t *testing.T) {
+	var tests = []struct {
+		name   string
+		method string
+		body   string
+		code   int
+	}{
+		{"Empty body", http.MethodPut, "", http.StatusBadRequest},
+		{"Empty json", http.MethodPut, "{}", http.StatusBadRequest},
+		{"Invalid type", http.MethodPut, `{"id":"5b9a4f9a64562a2f966fdb0b","type":"INVALID"}`, http.StatusBadRequest},
+		{"Invalid method", http.MethodPost, `{"id":"5b9a4f9a64562a2f966fdb0b","type":"DEVICE"}`, http.StatusBadRequest},
+		{"Invalid id", http.MethodPut, `{"id":"5b9a4f9a64562a2f966fdb0b","type":"DEVICE"}`, http.StatusBadRequest},
+	}
+
+	lc := logger.NewClient("update_test", false, "")
+	common.LogCli = lc
+	common.DevCli = &mock.DeviceClientMock{}
+	r := InitRestRoutes()
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var jsonStr = []byte(tt.body)
+			req := httptest.NewRequest(tt.method, common.APICallbackRoute, bytes.NewBuffer(jsonStr))
+			req.Header.Set("Content-Type", "application/json")
+
+			rr := httptest.NewRecorder()
+			r.ServeHTTP(rr, req)
+			fmt.Printf("rr.code = %v\n", rr.Code)
+			if status := rr.Code; status != tt.code {
+				t.Errorf("CallbackHandler: handler returned wrong status code: got %v want %v",
+					status, http.StatusLocked)
+			}
+		})
+	}
+}
+
 // Test Command REST call when service is locked.
 func TestCommandServiceLocked(t *testing.T) {
 	lc := logger.NewClient("command_test", false, "./command_test.log")
 	common.LogCli = lc
-	r := mux.NewRouter().PathPrefix(common.APIPrefix).Subrouter()
-	svc = &Service{name: deviceCommandTest, r: r, locked: true}
-	initCommand()
+	common.ServiceLocked = true
+	common.ServiceName = deviceCommandTest
+	r := InitRestRoutes()
 
 	req := httptest.NewRequest("GET", fmt.Sprintf("%s/%s/%s", common.APIDeviceRoute, "nil", "nil"), nil)
 	req = mux.SetURLVars(req, map[string]string{"deviceId": "nil", "cmd": "nil"})
 
 	rr := httptest.NewRecorder()
-	svc.r.ServeHTTP(rr, req)
+	r.ServeHTTP(rr, req)
 	if status := rr.Code; status != http.StatusLocked {
 		t.Errorf("ServiceLocked: handler returned wrong status code: got %v want %v",
 			status, http.StatusLocked)
@@ -57,16 +95,15 @@ func TestCommandServiceLocked(t *testing.T) {
 func TestCommandNoDevice(t *testing.T) {
 	lc := logger.NewClient("command_test", false, "./command_test.log")
 	common.LogCli = lc
-	r := mux.NewRouter().PathPrefix(common.APIPrefix).Subrouter()
-	svc = &Service{name: deviceCommandTest, r: r}
-	initCommand()
+	common.ServiceLocked = false
+	common.ValDescCli = &mock.ValueDescriptorMock{}
+	r := InitRestRoutes()
 
-	dc = &deviceCache{}
 	req := httptest.NewRequest("GET", fmt.Sprintf("%s/%s/%s", common.APIDeviceRoute, badDeviceId, testCmd), nil)
 	req = mux.SetURLVars(req, map[string]string{"deviceId": badDeviceId, "cmd": testCmd})
 
 	rr := httptest.NewRecorder()
-	svc.r.ServeHTTP(rr, req)
+	r.ServeHTTP(rr, req)
 
 	if status := rr.Code; status != http.StatusNotFound {
 		t.Errorf("NoDevice: handler returned wrong status code: got %v want %v",
@@ -74,23 +111,21 @@ func TestCommandNoDevice(t *testing.T) {
 	}
 
 	body := strings.TrimSpace(rr.Body.String())
-	expected := "dev: " + badDeviceId + " not found; GET " + common.APIDeviceRoute + "/" + badDeviceId + "/" + testCmd
+	expected := "Device: " + badDeviceId + " not found; GET " + common.APIDeviceRoute + "/" + badDeviceId + "/" + testCmd
 
 	if body != expected {
-		t.Errorf("ServiceLocked: handler returned wrong body:\nexpected: %s\ngot:      %s", expected, body)
+		t.Errorf("No Device: handler returned wrong body:\nexpected: %s\ngot:      %s", expected, body)
 	}
 }
 
 // TestCommandNoDevice tests the command REST call when the device specified
 // by deviceId is locked.
-func TestCommandDeviceLocked(t *testing.T) {
-	lc := logger.NewClient("command_test", false, "./command_test.log")
-	common.LogCli = lc
-	r := mux.NewRouter().PathPrefix(common.APIPrefix).Subrouter()
-	svc = &Service{name: deviceCommandTest, r: r}
-	initCommand()
+//func TestCommandDeviceLocked(t *testing.T) {
+//	lc := logger.NewClient("command_test", false, "./command_test.log")
+//	common.LogCli = lc
+	//r := InitRestRoutes()
 	// Empty cache will by default have no devices.
-	dc = &deviceCache{}
+	//dc = &deviceCache{}
 
 	/* TODO: adding a device to the devices cache requires a live metadata instance. We need
 	 * create interfaces for all of the caches, so that they can be mocked in unit tests.
@@ -135,4 +170,4 @@ func TestCommandDeviceLocked(t *testing.T) {
 		t.Errorf("DeviceLocked: handler returned wrong body:\nexpected: %s\ngot:      %s", expected, body)
 	}
 	*/
-}
+//}

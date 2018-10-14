@@ -22,9 +22,11 @@ var (
 
 type ProfileCache interface {
 	ForName(name string) (models.DeviceProfile, bool)
+	ForId(id string) (models.DeviceProfile, bool)
 	All() []models.DeviceProfile
 	Add(profile models.DeviceProfile) error
 	Update(profile models.DeviceProfile) error
+	Remove(id string) error
 	RemoveByName(name string) error
 	DeviceObject(profileName string, objectName string) (models.DeviceObject, bool)
 	CommandExists(prfName string, cmd string) (bool, error)
@@ -32,7 +34,8 @@ type ProfileCache interface {
 }
 
 type profileCache struct {
-	dpMap    map[string]models.DeviceProfile
+	dpMap    map[string]models.DeviceProfile  //in dpMap, key is Device name, and value is DeviceProfile instance
+	nameMap  map[string]string    //in nameMap, key is id, and value is DeviceProfile name
 	doMap    map[string]map[string]models.DeviceObject
 	getOpMap map[string]map[string][]models.ResourceOperation
 	setOpMap map[string]map[string][]models.ResourceOperation
@@ -40,6 +43,16 @@ type profileCache struct {
 }
 
 func (p *profileCache) ForName(name string) (models.DeviceProfile, bool) {
+	dp, ok := p.dpMap[name]
+	return dp, ok
+}
+
+func (p *profileCache) ForId(id string) (models.DeviceProfile, bool) {
+	name, ok := p.nameMap[id]
+	if !ok {
+		return models.DeviceProfile{}, ok
+	}
+
 	dp, ok := p.dpMap[name]
 	return dp, ok
 }
@@ -60,6 +73,7 @@ func (p *profileCache) Add(profile models.DeviceProfile) error {
 		return fmt.Errorf("device profile %s has already existed in cache", profile.Name)
 	}
 	p.dpMap[profile.Name] = profile
+	p.nameMap[profile.Id.Hex()] = profile.Name
 	p.doMap[profile.Name] = deviceObjectSliceToMap(profile.DeviceResources)
 	p.getOpMap[profile.Name], p.setOpMap[profile.Name] = profileResourceSliceToMaps(profile.Resources)
 	p.cmdMap[profile.Name] = commandSliceToMap(profile.Commands)
@@ -93,23 +107,41 @@ func commandSliceToMap(commands []models.Command) map[string]models.Command {
 }
 
 func (p *profileCache) Update(profile models.DeviceProfile) error {
-	_, ok := p.dpMap[profile.Name]
+	name, ok := p.nameMap[profile.Id.Hex()]
+	if !ok {
+		return fmt.Errorf("device profile %s does not exist in cache", profile.Id.Hex())
+	}
+	_, ok = p.dpMap[name]
 	if !ok {
 		return fmt.Errorf("device profile %s does not exist in cache", profile.Name)
 	}
+
+	delete(p.dpMap, name)  // delete first because the name might be changed
 	p.dpMap[profile.Name] = profile
+	p.nameMap[profile.Id.Hex()] = profile.Name
 	p.doMap[profile.Name] = deviceObjectSliceToMap(profile.DeviceResources)
 	p.getOpMap[profile.Name], p.setOpMap[profile.Name] = profileResourceSliceToMaps(profile.Resources)
 	p.cmdMap[profile.Name] = commandSliceToMap(profile.Commands)
 	return nil
 }
 
+func (p *profileCache) Remove(id string) error {
+	name, ok := p.nameMap[id]
+	if !ok {
+		return fmt.Errorf("device profile %s does not exist in cache", id)
+	}
+
+	return p.RemoveByName(name)
+}
+
 func (p *profileCache) RemoveByName(name string) error {
-	_, ok := p.dpMap[name]
+	profile, ok := p.dpMap[name]
 	if !ok {
 		return fmt.Errorf("device profile %s does not exist in cache", name)
 	}
+
 	delete(p.dpMap, name)
+	delete(p.nameMap, profile.Id.Hex())
 	delete(p.doMap, name)
 	delete(p.getOpMap, name)
 	delete(p.setOpMap, name)
@@ -173,19 +205,22 @@ func (p *profileCache) ResourceOperations(prfName string, cmd string, method str
 
 func newProfileCache(profiles []models.DeviceProfile) ProfileCache {
 	pcOnce.Do(func() {
-		dpMap := make(map[string]models.DeviceProfile, len(profiles))
-		doMap := make(map[string]map[string]models.DeviceObject, len(profiles))
-		getOpMap := make(map[string]map[string][]models.ResourceOperation, len(profiles))
-		setOpMap := make(map[string]map[string][]models.ResourceOperation, len(profiles))
-		cmdMap := make(map[string]map[string]models.Command, len(profiles))
+		count := len(profiles)
+		dpMap := make(map[string]models.DeviceProfile, count)
+		nameMap := make(map[string]string, count)
+		doMap := make(map[string]map[string]models.DeviceObject, count)
+		getOpMap := make(map[string]map[string][]models.ResourceOperation, count)
+		setOpMap := make(map[string]map[string][]models.ResourceOperation, count)
+		cmdMap := make(map[string]map[string]models.Command, count)
 		for _, dp := range profiles {
 			dpMap[dp.Name] = dp
+			nameMap[dp.Id.Hex()] = dp.Name
 			doMap[dp.Name] = deviceObjectSliceToMap(dp.DeviceResources)
 			getOpMap[dp.Name], setOpMap[dp.Name] = profileResourceSliceToMaps(dp.Resources)
 			cmdMap[dp.Name] = commandSliceToMap(dp.Commands)
 		}
 
-		pc = &profileCache{dpMap: dpMap, doMap: doMap, getOpMap: getOpMap, setOpMap: setOpMap, cmdMap: cmdMap}
+		pc = &profileCache{dpMap: dpMap, nameMap: nameMap, doMap: doMap, getOpMap: getOpMap, setOpMap: setOpMap, cmdMap: cmdMap}
 	})
 	return pc
 }

@@ -122,7 +122,10 @@ func createDescriptorFromResourceOperation(profileName string, op models.Resourc
 		// Value Descriptor has been created
 		return
 	} else {
-		devObj := cache.Profiles().DeviceObject(op.Parameter, op.Object)
+		devObj, ok := cache.Profiles().DeviceObject(profileName, op.Object)
+		if !ok {
+			common.LogCli.Error(fmt.Sprintf("can't find Device Object %s to match Resource Operation %v in Device Profile %s", op.Object, op, profileName))
+		}
 		desc, err := createDescriptor(op.Parameter, devObj)
 		if err != nil {
 			common.LogCli.Error(fmt.Sprintf("createing Value Descriptor %v failed: %v", desc, err))

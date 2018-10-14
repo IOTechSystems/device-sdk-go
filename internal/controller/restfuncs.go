@@ -88,7 +88,7 @@ func commandFunc(w http.ResponseWriter, req *http.Request) {
 	event, appErr := handler.CommandHandler(vars, body, req.Method)
 
 	if appErr != nil {
-		http.Error(w, appErr.Message(), appErr.Code())
+		http.Error(w, fmt.Sprintf("%s %s",appErr.Message(), req.URL.Path), appErr.Code())
 	} else if event != nil {
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(event)

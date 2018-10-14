@@ -8,9 +8,14 @@ package mock
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/edgexfoundry/edgex-go/pkg/models"
 	"gopkg.in/mgo.v2/bson"
+)
+
+const (
+	invalidDeviceId = "5b9a4f9a64562a2f966fdb0b"
 )
 
 type DeviceClientMock struct{}
@@ -32,7 +37,10 @@ func (dc *DeviceClientMock) CheckForDevice(token string) (models.Device, error) 
 }
 
 func (dc *DeviceClientMock) Device(id string) (models.Device, error) {
-	panic("implement me")
+	if id == invalidDeviceId {
+		return models.Device{}, fmt.Errorf("invalid id")
+	}
+	return models.Device{}, nil
 }
 
 func (dc *DeviceClientMock) DeviceForName(name string) (models.Device, error) {
@@ -74,7 +82,7 @@ func (dc *DeviceClientMock) DevicesForService(serviceid string) ([]models.Device
 }
 
 func (dc *DeviceClientMock) DevicesForServiceByName(serviceName string) ([]models.Device, error) {
-	panic("implement me")
+	return []models.Device{}, nil
 }
 
 func (dc *DeviceClientMock) Update(dev models.Device) error {

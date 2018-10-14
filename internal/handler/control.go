@@ -17,6 +17,6 @@ func DiscoveryHandler(requestMap map[string]string) {
 }
 
 func TransformHandler(requestMap map[string]string) (map[string]string, common.AppError) {
-	common.LogCli.Info(fmt.Sprintf("service: transform request: transformData: %s", vars["transformData"]))
+	common.LogCli.Info(fmt.Sprintf("service: transform request: transformData: %s", requestMap["transformData"]))
 	return requestMap, nil
 }

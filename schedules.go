@@ -92,7 +92,7 @@ func addScheduleEvents(scheduleEvents []models.ScheduleEvent) {
 	for i := 0; i < len(scheduleEvents); i++ {
 		scheduleEvent := scheduleEvents[i]
 		if scheduleEvent.Service == "" {
-			scheduleEvent.Service = svc.name
+			scheduleEvent.Service = common.ServiceName
 		}
 
 		if isScheduleEventExist(scheduleEvent.Name) {

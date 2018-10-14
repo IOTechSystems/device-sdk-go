@@ -65,6 +65,11 @@ func (s *Service) AddDevice(device models.Device) (id string, err error) {
 	return id, nil
 }
 
+// Devices return all managed Devices from cache
+func (s *Service) Devices() []models.Device {
+	return cache.Devices().All()
+}
+
 // RemoveDevice removes the specified device by id from the cache and ensures that the
 // instance in Core Metadata is also removed.
 func (s *Service) RemoveDevice(id string) error {

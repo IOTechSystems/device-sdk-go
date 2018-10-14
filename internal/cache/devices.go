@@ -31,8 +31,8 @@ type DeviceCache interface {
 }
 
 type deviceCache struct {
-	dMap    map[string]*models.Device
-	nameMap map[string]string
+	dMap    map[string]*models.Device  //in dMap, key is Device name, and value is Device instance reference
+	nameMap map[string]string  //in nameMap, key is id, and value is Device name
 }
 
 // ForName returns a Device with the given name.
@@ -87,6 +87,7 @@ func (d *deviceCache) Update(device models.Device) error {
 		return fmt.Errorf("device %s does not exist in cache", device.Name)
 	}
 
+	delete(d.dMap, name)  // delete first because the name might be changed
 	d.dMap[device.Name] = &device
 	d.nameMap[device.Id.Hex()] = device.Name
 	return nil
@@ -108,7 +109,8 @@ func (d *deviceCache) RemoveByName(name string) error {
 	if !ok {
 		return fmt.Errorf("device %s does not exist in cache", name)
 	}
-	delete(d.nameMap, device.Name)
+
+	delete(d.nameMap, device.Id.Hex())
 	delete(d.dMap, name)
 	return nil
 }
@@ -128,8 +130,9 @@ func (d *deviceCache) UpdateAdminState(id string, state models.AdminState) error
 
 func newDeviceCache(devices []models.Device) DeviceCache {
 	dcOnce.Do(func() {
-		dMap := make(map[string]*models.Device, len(devices))
-		nameMap := make(map[string]string, len(devices))
+		count := len(devices)
+		dMap := make(map[string]*models.Device, count)
+		nameMap := make(map[string]string, count)
 		for i, d := range devices {
 			dMap[d.Name] = &devices[i]
 			nameMap[d.Id.Hex()] = d.Name
