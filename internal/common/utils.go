@@ -216,7 +216,7 @@ func MakeAddressable(name string, addr *models.Addressable) (*models.Addressable
 	// check whether there has been an existing addressable
 	addressable, err := AddrCli.AddressableForName(name)
 	if err != nil {
-		if errsc, ok := err.(*types.ErrServiceClient); ok && errsc.StatusCode == 404 {
+		if _, ok := err.(types.ErrNotFound); ok {
 			LogCli.Debug(fmt.Sprintf("Addressable %s doesn't exist, creating a new one", addr.Name))
 			millis := time.Now().UnixNano() / int64(time.Millisecond)
 			addressable = *addr

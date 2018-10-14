@@ -37,8 +37,11 @@ type deviceCache struct {
 
 // ForName returns a Device with the given name.
 func (d *deviceCache) ForName(name string) (models.Device, bool) {
-	dp, ok := d.dMap[name]
-	return *dp, ok
+	if device, ok := d.dMap[name]; ok {
+		return *device, ok
+	} else {
+		return models.Device{}, ok
+	}
 }
 
 // ForId returns a device with the given device id.
@@ -48,8 +51,11 @@ func (d *deviceCache) ForId(id string) (models.Device, bool) {
 		return models.Device{}, ok
 	}
 
-	dev := d.dMap[name]
-	return *dev, ok
+	if dev, ok := d.dMap[name]; ok {
+		return *dev, ok
+	} else {
+		return models.Device{}, ok
+	}
 }
 
 // All() returns the current list of devices in the cache.
