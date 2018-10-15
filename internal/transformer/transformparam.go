@@ -16,30 +16,30 @@ import (
 	"github.com/edgexfoundry/edgex-go/pkg/models"
 )
 
-func TransformPutParameter(cv *model.CommandValue, pv models.PropertyValue) error {
+func TransformWriteParameter(cv *model.CommandValue, pv models.PropertyValue) error {
 	var err error
 
 	if pv.Offset != "" {
-		err = transformPutOffset(cv, pv.Offset)
+		err = transformWriteOffset(cv, pv.Offset)
 		if err != nil {
 			return err
 		}
 	}
 
 	if pv.Scale != "" {
-		err = transformPutScale(cv, pv.Scale)
+		err = transformWriteScale(cv, pv.Scale)
 		if err != nil {
 			return err
 		}
 	}
 
 	if pv.Base != "" {
-		err = transformPutBase(cv, pv.Base)
+		err = transformWriteBase(cv, pv.Base)
 	}
 	return err
 }
 
-func transformPutBase(cv *model.CommandValue, base string) error {
+func transformWriteBase(cv *model.CommandValue, base string) error {
 	v, err := commandValueToFloat64(cv)
 	if err != nil {
 		return err
@@ -55,7 +55,7 @@ func transformPutBase(cv *model.CommandValue, base string) error {
 	return err
 }
 
-func transformPutScale(cv *model.CommandValue, scale string) error {
+func transformWriteScale(cv *model.CommandValue, scale string) error {
 	v, err := commandValueToFloat64(cv)
 	if err != nil {
 		return err
@@ -74,7 +74,7 @@ func transformPutScale(cv *model.CommandValue, scale string) error {
 	return err
 }
 
-func transformPutOffset(cv *model.CommandValue, offset string) error {
+func transformWriteOffset(cv *model.CommandValue, offset string) error {
 	v, err := commandValueToFloat64(cv)
 	if err != nil {
 		return err

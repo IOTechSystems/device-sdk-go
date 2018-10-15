@@ -18,30 +18,30 @@ import (
 	"github.com/edgexfoundry/edgex-go/pkg/models"
 )
 
-func TransformGetResult(cv *model.CommandValue, pv models.PropertyValue) error {
+func TransformReadResult(cv *model.CommandValue, pv models.PropertyValue) error {
 	var err error
 
 	if pv.Base != "" {
-		err = transformGetBase(cv, pv.Base)
+		err = transformReadBase(cv, pv.Base)
 		if err != nil {
 			return err
 		}
 	}
 
 	if pv.Scale != "" {
-		err = transformGetScale(cv, pv.Scale)
+		err = transformReadScale(cv, pv.Scale)
 		if err != nil {
 			return err
 		}
 	}
 
 	if pv.Offset != "" {
-		err = transformGetOffset(cv, pv.Offset)
+		err = transformReadOffset(cv, pv.Offset)
 	}
 	return err
 }
 
-func transformGetBase(cv *model.CommandValue, base string) error {
+func transformReadBase(cv *model.CommandValue, base string) error {
 	v, err := commandValueToFloat64(cv)
 	if err != nil {
 		return err
@@ -57,7 +57,7 @@ func transformGetBase(cv *model.CommandValue, base string) error {
 	return err
 }
 
-func transformGetScale(cv *model.CommandValue, scale string) error {
+func transformReadScale(cv *model.CommandValue, scale string) error {
 	v, err := commandValueToFloat64(cv)
 	if err != nil {
 		return err
@@ -73,7 +73,7 @@ func transformGetScale(cv *model.CommandValue, scale string) error {
 	return err
 }
 
-func transformGetOffset(cv *model.CommandValue, offset string) error {
+func transformReadOffset(cv *model.CommandValue, offset string) error {
 	v, err := commandValueToFloat64(cv)
 	if err != nil {
 		return err

@@ -39,7 +39,7 @@ func processAsyncResults() {
 			}
 
 			if common.CurrentConfig.Device.DataTransform {
-				err := transformer.TransformGetResult(cv, do.Properties.Value)
+				err := transformer.TransformReadResult(cv, do.Properties.Value)
 				if err != nil {
 					common.LogCli.Error(fmt.Sprintf("CommandValue (%s) transformed failed: %v", cv.String(), err))
 				}

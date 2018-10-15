@@ -64,14 +64,14 @@ func CommandHandler(vars map[string]string, body string, method string) (*models
 	}
 
 	if strings.ToLower(method) == "get" {
-		return execGetCmd(&d, cmd)
+		return execReadCmd(&d, cmd)
 	} else {
-		appErr := execPutCmd(&d, cmd, body)
+		appErr := execWriteCmd(&d, cmd, body)
 		return nil, appErr
 	}
 }
 
-func execGetCmd(device *models.Device, cmd string) (*models.Event, common.AppError) {
+func execReadCmd(device *models.Device, cmd string) (*models.Event, common.AppError) {
 	readings := make([]models.Reading, 0, common.CurrentConfig.Device.MaxCmdOps)
 
 	// make ResourceOperations
@@ -110,9 +110,9 @@ func execGetCmd(device *models.Device, cmd string) (*models.Event, common.AppErr
 		reqs[i].DeviceObject = devObj
 	}
 
-	results, err := common.Driver.HandleGetCommands(device.Addressable, reqs)
+	results, err := common.Driver.HandleReadCommands(device.Addressable, reqs)
 	if err != nil {
-		msg := fmt.Sprintf("HandleGetCommands error for Device: %s cmd: %s, %v", device.Name, cmd, err)
+		msg := fmt.Sprintf("HandleReadCommands error for Device: %s cmd: %s, %v", device.Name, cmd, err)
 		return nil, common.NewServerError(msg, err)
 	}
 
@@ -128,7 +128,7 @@ func execGetCmd(device *models.Device, cmd string) (*models.Event, common.AppErr
 		}
 
 		if common.CurrentConfig.Device.DataTransform {
-			err = transformer.TransformGetResult(cv, do.Properties.Value)
+			err = transformer.TransformReadResult(cv, do.Properties.Value)
 			if err != nil {
 				common.LogCli.Error(fmt.Sprintf("CommandValue (%s) transformed failed: %v", cv.String(), err))
 				transformsOK = false
@@ -182,7 +182,7 @@ func execGetCmd(device *models.Device, cmd string) (*models.Event, common.AppErr
 	return event, nil
 }
 
-func execPutCmd(device *models.Device, cmd string, params string) common.AppError {
+func execWriteCmd(device *models.Device, cmd string, params string) common.AppError {
 	ros, err := cache.Profiles().ResourceOperations(device.Profile.Name, cmd, "set")
 	if err != nil {
 		msg := fmt.Sprintf("Handler - Command: can't find ResrouceOperations in Profile(%s) and Command(%s), %v", device.Profile.Name, cmd, err)
@@ -199,7 +199,7 @@ func execPutCmd(device *models.Device, cmd string, params string) common.AppErro
 
 	roMap := roSliceToMap(ros)
 
-	cvs, err := parsePutParams(roMap, params)
+	cvs, err := parseWriteParams(roMap, params)
 	if err != nil {
 		msg := fmt.Sprintf("Handler - Command: Put parameters parsing failed: %s", params)
 		common.LogCli.Error(msg)
@@ -227,9 +227,9 @@ func execPutCmd(device *models.Device, cmd string, params string) common.AppErro
 		reqs[i].DeviceObject = devObj
 
 		if common.CurrentConfig.Device.DataTransform {
-			err = transformer.TransformPutParameter(cv, devObj.Properties.Value)
+			err = transformer.TransformWriteParameter(cv, devObj.Properties.Value)
 			if err != nil {
-				msg := fmt.Sprintf("Handler - parsePutParams: CommandValue (%s) transformed failed: %v", cv.String(), err)
+				msg := fmt.Sprintf("Handler - parseWriteParams: CommandValue (%s) transformed failed: %v", cv.String(), err)
 				common.LogCli.Error(msg)
 				return common.NewServerError(msg, err)
 			}
@@ -244,20 +244,20 @@ func execPutCmd(device *models.Device, cmd string, params string) common.AppErro
 		}
 	}
 
-	err = common.Driver.HandlePutCommands(device.Addressable, reqs, cvs)
+	err = common.Driver.HandleWriteCommands(device.Addressable, reqs, cvs)
 	if err != nil {
-		msg := fmt.Sprintf("HandlePutCommands error for Device: %s cmd: %s, %v", device.Name, cmd, err)
+		msg := fmt.Sprintf("HandleWriteCommands error for Device: %s cmd: %s, %v", device.Name, cmd, err)
 		return common.NewServerError(msg, err)
 	}
 
 	return nil
 }
 
-func parsePutParams(roMap map[string]*models.ResourceOperation, params string) ([]*model.CommandValue, error) {
+func parseWriteParams(roMap map[string]*models.ResourceOperation, params string) ([]*model.CommandValue, error) {
 	var paramMaps []map[string]string
 	err := json.Unmarshal([]byte(params), &paramMaps)
 	if err != nil {
-		common.LogCli.Error(fmt.Sprintf("Handler - Command: parsing Put parameters failed %s, %v", params, err))
+		common.LogCli.Error(fmt.Sprintf("Handler - Command: parsing Write parameters failed %s, %v", params, err))
 		return []*model.CommandValue{}, err
 	}
 
@@ -370,9 +370,9 @@ func CommandAllHandler(cmd string, body string, method string) ([]*models.Event,
 			var event *models.Event = nil
 			var appErr common.AppError = nil
 			if strings.ToLower(method) == "get" {
-				event, appErr = execGetCmd(device, cmd)
+				event, appErr = execReadCmd(device, cmd)
 			} else {
-				appErr = execPutCmd(device, cmd, body)
+				appErr = execWriteCmd(device, cmd, body)
 			}
 			cmdResults <- struct {
 				event  *models.Event
