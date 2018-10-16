@@ -28,6 +28,7 @@ func LoadDevices(deviceList []common.DeviceConfig) error {
 			err := createDevice(d)
 			if err != nil {
 				common.LogCli.Error(fmt.Sprintf("creating Device from config failed: %v", d))
+				return err
 			}
 		}
 	}
@@ -66,10 +67,8 @@ func createDevice(dc common.DeviceConfig) error {
 		common.LogCli.Error(fmt.Sprintf("Add Device failed %v, error: %v", device, err))
 		return err
 	}
-	if len(id) != 24 || !bson.IsObjectIdHex(id) {
-		errMsg := "Add Device returned invalid Id: " + id
-		common.LogCli.Error(errMsg)
-		return fmt.Errorf(errMsg)
+	if err = common.VerifyIdFormat(id, "Device"); err != nil {
+		return err
 	}
 	device.Id = bson.ObjectIdHex(id)
 	cache.Devices().Add(*device)

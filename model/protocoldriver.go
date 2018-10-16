@@ -40,13 +40,13 @@ type ProtocolDriver interface {
 
 	// HandleReadCommands passes a slice of CommandRequest struct each representing
 	// a ResourceOperation for a specific device resource (aka DeviceObject).
-	HandleReadCommands(addr models.Addressable, reqs []CommandRequest) ([]*CommandValue, error)
+	HandleReadCommands(addr *models.Addressable, reqs []CommandRequest) ([]*CommandValue, error)
 
 	// HandleWriteCommands passes a slice of CommandRequest struct each representing
 	// a ResourceOperation for a specific device resource (aka DeviceObject).
 	// Since the commands are actuation commands, params provide parameters for the individual
 	// command.
-	HandleWriteCommands(addr models.Addressable, reqs []CommandRequest, params []*CommandValue) error
+	HandleWriteCommands(addr *models.Addressable, reqs []CommandRequest, params []*CommandValue) error
 
 	// Stop instructs the protocol-specific DS code to shutdown gracefully, or
 	// if the force parameter is 'true', immediately. The driver is responsible

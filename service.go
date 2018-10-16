@@ -33,15 +33,13 @@ var (
 
 // A Service listens for requests and routes them to the right command
 type Service struct {
-	svcInfo       *common.ServiceInfo
-	discovery     model.ProtocolDiscovery
-	asyncReadings bool
-	initAttempts  int
-	initialized   bool
-	stopped       bool
-	scca          ScheduleCacheInterface
-	cw            *Watchers
-	asyncCh       chan *model.AsyncValues
+	svcInfo      *common.ServiceInfo
+	discovery    model.ProtocolDiscovery
+	initAttempts int
+	initialized  bool
+	stopped      bool
+	cw           *Watchers
+	asyncCh      chan *model.AsyncValues
 }
 
 func (s *Service) Name() string {
@@ -57,7 +55,7 @@ func (s *Service) Discovery() model.ProtocolDiscovery {
 }
 
 func (s *Service) AsyncReadings() bool {
-	return s.asyncReadings
+	return common.CurrentConfig.Service.EnableAsyncReadings
 }
 
 // Start the device service.
@@ -77,21 +75,31 @@ func (s *Service) Start(svcInfo *common.ServiceInfo) (err error) {
 
 	// initialize devices, objects & profiles
 	cache.InitCache()
-	provision.LoadProfiles(common.CurrentConfig.Device.ProfilesDir)
-	provision.LoadDevices(common.CurrentConfig.DeviceList)
-
-	s.cw = newWatchers()
-	// initialize scheduler
-	s.scca = getScheduleCache(common.CurrentConfig)
-
-	// initialize driver
-	if s.asyncReadings {
-		// TODO: make channel buffer size a setting
-		s.asyncCh = make(chan *model.AsyncValues, 16)
-
-		go processAsyncResults()
+	err = provision.LoadProfiles(common.CurrentConfig.Device.ProfilesDir)
+	if err != nil {
+		err = common.LogCli.Error("Failed to create the pre-defined Device Profiles")
+		return err
 	}
 
+	err = provision.LoadDevices(common.CurrentConfig.DeviceList)
+	if err != nil {
+		err = common.LogCli.Error("Failed to create the pre-defined Devices")
+		return err
+	}
+
+	err = provision.LoadSchedulesAndEvents(common.CurrentConfig)
+	if err != nil {
+		err = common.LogCli.Error("Failed to create the pre-defined Schedules or Schedule Events")
+		return err
+	}
+
+	s.cw = newWatchers()
+
+	// initialize driver
+	if common.CurrentConfig.Service.EnableAsyncReadings {
+		s.asyncCh = make(chan *model.AsyncValues, common.CurrentConfig.Service.AsyncBufferSize)
+		go processAsyncResults()
+	}
 	err = common.Driver.Initialize(common.LogCli, s.asyncCh)
 	if err != nil {
 		common.LogCli.Error(fmt.Sprintf("Driver.Initialize failure: %v; exiting.", err))
@@ -158,8 +166,7 @@ func createNewDeviceService() (models.DeviceService, error) {
 		common.LogCli.Error(fmt.Sprintf("Add Deviceservice: %s; failed: %v", common.ServiceName, err))
 		return models.DeviceService{}, err
 	}
-	if len(id) != 24 || !bson.IsObjectIdHex(id) {
-		common.LogCli.Error("Add deviceservice returned invalid Id: %s", id)
+	if err = common.VerifyIdFormat(id, "Device Service"); err != nil {
 		return models.DeviceService{}, err
 	}
 
@@ -194,10 +201,8 @@ func makeNewAddressable() (*models.Addressable, error) {
 				common.LogCli.Error(fmt.Sprintf("Add addressable failed %v, error: %v", addr, err))
 				return nil, err
 			}
-			if len(id) != 24 || !bson.IsObjectIdHex(id) {
-				errMsg := "Add addressable returned invalid Id: " + id
-				common.LogCli.Error(errMsg)
-				return nil, fmt.Errorf(errMsg)
+			if err = common.VerifyIdFormat(id, "Addressable"); err != nil {
+				return nil, err
 			}
 			addr.Id = bson.ObjectIdHex(id)
 		} else {

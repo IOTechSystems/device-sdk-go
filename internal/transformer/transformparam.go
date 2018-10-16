@@ -18,6 +18,9 @@ import (
 
 func TransformWriteParameter(cv *model.CommandValue, pv models.PropertyValue) error {
 	var err error
+	if cv.Type == model.String || cv.Type == model.Bool {
+		return nil // do nothing for String and Bool
+	}
 
 	if pv.Offset != "" {
 		err = transformWriteOffset(cv, pv.Offset)
@@ -48,6 +51,8 @@ func transformWriteBase(cv *model.CommandValue, base string) error {
 	if err != nil {
 		common.LogCli.Error(fmt.Sprintf("the scale %s of PropertyValue cannot be parsed to float64: %v", base, err))
 		return err
+	} else if b == 0 {
+		return nil // do nothing if Base = 0
 	}
 
 	v = math.Log(v) / math.Log(b)

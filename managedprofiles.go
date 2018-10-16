@@ -34,10 +34,8 @@ func (s *Service) AddDeviceProfile(profile models.DeviceProfile) (id string, err
 		common.LogCli.Error(fmt.Sprintf("Add Profile failed %v, error: %v", profile, err))
 		return "", err
 	}
-	if len(id) != 24 || !bson.IsObjectIdHex(id) {
-		errMsg := "Add Device returned invalid Id: " + id
-		common.LogCli.Error(errMsg)
-		return "", fmt.Errorf(errMsg)
+	if err = common.VerifyIdFormat(id, "Device Profile"); err != nil {
+		return "", err
 	}
 	profile.Id = bson.ObjectIdHex(id)
 	cache.Profiles().Add(profile)

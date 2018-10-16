@@ -81,10 +81,8 @@ func LoadProfiles(path string) error {
 				common.LogCli.Error(fmt.Sprintf("profiles: Add Device Profile: %s to Core Metadata failed: %v\n", fullPath, err))
 				continue
 			}
-
-			if len(id) != 24 || !bson.IsObjectIdHex(id) {
-				common.LogCli.Error("Add Device Profile returned invalid Id: " + id)
-				continue
+			if err = common.VerifyIdFormat(id, "Device Profile"); err != nil {
+				return err
 			}
 
 			profile.Id = bson.ObjectIdHex(id)
@@ -157,14 +155,12 @@ func createDescriptor(name string, devObj models.DeviceObject) (*models.ValueDes
 		return nil, err
 	}
 
-	if !bson.IsObjectIdHex(id) {
-		// TODO: should probably be an assertion?
-		common.LogCli.Error(fmt.Sprintf("profiles: Add Value Descriptor returned invalid Id: %s\n", id))
+	if err = common.VerifyIdFormat(id, "Value Descriptor"); err != nil {
 		return nil, err
-	} else {
-		desc.Id = bson.ObjectIdHex(id)
-		common.LogCli.Debug(fmt.Sprintf("profiles: created Value Descriptor id: %s\n", id))
 	}
+
+	desc.Id = bson.ObjectIdHex(id)
+	common.LogCli.Debug(fmt.Sprintf("profiles: created Value Descriptor id: %s\n", id))
 
 	return desc, nil
 }

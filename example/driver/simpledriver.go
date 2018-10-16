@@ -42,7 +42,7 @@ func (s *SimpleDriver) Initialize(lc logger.LoggingClient, asyncCh chan<- *model
 
 // HandleCommand triggers an asynchronous protocol specific GET or SET operation
 // for the specified device.
-func (s *SimpleDriver) HandleReadCommands(addr models.Addressable, reqs []model.CommandRequest) (res []*model.CommandValue, err error) {
+func (s *SimpleDriver) HandleReadCommands(addr *models.Addressable, reqs []model.CommandRequest) (res []*model.CommandValue, err error) {
 
 	if len(reqs) != 1 {
 		err = fmt.Errorf("SimpleDriver.HandleCommands; too many command requests; only one supported")
@@ -60,7 +60,7 @@ func (s *SimpleDriver) HandleReadCommands(addr models.Addressable, reqs []model.
 	return
 }
 
-func (s *SimpleDriver) HandleWriteCommands(addr models.Addressable, reqs []model.CommandRequest,
+func (s *SimpleDriver) HandleWriteCommands(addr *models.Addressable, reqs []model.CommandRequest,
 	params []*model.CommandValue) error {
 
 	if len(reqs) != 1 {

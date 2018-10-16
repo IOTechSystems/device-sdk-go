@@ -228,10 +228,8 @@ func MakeAddressable(name string, addr *models.Addressable) (*models.Addressable
 				LogCli.Error(fmt.Sprintf("Add Addressable failed %v, error: %v", addr, err))
 				return nil, err
 			}
-			if len(id) != 24 || !bson.IsObjectIdHex(id) {
-				errMsg := "Add Addressable returned invalid Id: " + id
-				LogCli.Error(errMsg)
-				return nil, fmt.Errorf(errMsg)
+			if err = VerifyIdFormat(id, "Addressable"); err != nil {
+				return nil, err
 			}
 			addressable.Id = bson.ObjectIdHex(id)
 		} else {
@@ -243,4 +241,13 @@ func MakeAddressable(name string, addr *models.Addressable) (*models.Addressable
 	}
 
 	return &addressable, nil
+}
+
+func VerifyIdFormat(id string, objName string) error {
+	if len(id) != 24 || !bson.IsObjectIdHex(id) {
+		errMsg := fmt.Sprintf("Add %s returned invalid Id: %s", objName, id)
+		LogCli.Error(errMsg)
+		return fmt.Errorf(errMsg)
+	}
+	return nil
 }

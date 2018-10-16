@@ -39,8 +39,14 @@ type ServiceInfo struct {
 	// Timeout specifies a timeout (in milliseconds) for
 	// processing REST calls from other services.
 	Timeout int
-	Name    string
+	// Name is the name of this Device Service
+	Name string
+	// Version is the version of this Device Service
 	Version string
+	// EnableAsyncReadings to determine whether the Device Service would deal with the asynchronous readings
+	EnableAsyncReadings bool
+	// AsyncBufferSize defines the size of asynchronous channel
+	AsyncBufferSize int
 }
 
 type RegisteredService struct {

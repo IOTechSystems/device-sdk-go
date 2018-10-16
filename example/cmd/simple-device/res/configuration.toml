@@ -9,6 +9,8 @@ ReadMaxLimit = 256
 Timeout = 5000
 Name = "device-simple"
 Version = "0.1"
+EnableAsyncReadings = true
+AsyncBufferSize = 16
 
 [Registry]
 Host = "localhost"

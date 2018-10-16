@@ -52,7 +52,7 @@ func (ScheduleEventClientMock) ScheduleEventsForAddressableByName(name string) (
 }
 
 func (ScheduleEventClientMock) ScheduleEventsForServiceByName(name string) ([]models.ScheduleEvent, error) {
-	panic("implement me")
+	return []models.ScheduleEvent{}, nil
 }
 
 func (ScheduleEventClientMock) Update(dev models.ScheduleEvent) error {

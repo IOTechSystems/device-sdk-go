@@ -20,6 +20,9 @@ import (
 
 func TransformReadResult(cv *model.CommandValue, pv models.PropertyValue) error {
 	var err error
+	if cv.Type == model.String || cv.Type == model.Bool {
+		return nil // do nothing for String and Bool
+	}
 
 	if pv.Base != "" {
 		err = transformReadBase(cv, pv.Base)
@@ -50,6 +53,8 @@ func transformReadBase(cv *model.CommandValue, base string) error {
 	if err != nil {
 		common.LogCli.Error(fmt.Sprintf("the base %s of PropertyValue cannot be parsed to float64: %v", base, err))
 		return err
+	} else if b == 0 {
+		return nil // do nothing if Base = 0
 	}
 
 	v = math.Pow(b, v)
