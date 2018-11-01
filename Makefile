@@ -9,7 +9,7 @@ MICROSERVICES=example/cmd/simple-device/simple-device
 build: $(MICROSERVICES)
 	go build ./...
 
-cmd/simple-device:
+cmd/simple-device/simple-device:
 	$(GO) build -o $@ ./example/cmd/simple-device
 
 test:
