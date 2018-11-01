@@ -1,5 +1,5 @@
 [Service]
-Host = "localhost"
+Host = "device-simple"
 Port = 49990
 ConnectRetries = 3
 Labels = []
